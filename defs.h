@@ -37,7 +37,6 @@ int IC; /* instruction counter */
 int DC; /* data counter  */
 
 enum { IMM = 1, DIR = 2, REL = 4, REG = 8 }; /*enum for operand types*/
-enum { WRNG_CMD = 1, WRNG_OP1 = 2, WRNG_OP2 = 4 }; /* enums for errors in commands */
 
 typedef struct operandNode * optr; /*pointer to operandNode object*/
 

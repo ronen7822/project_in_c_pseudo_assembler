@@ -87,27 +87,34 @@ int initLegalTable() {
 
 /* isCmdValid - check if command is valid and operands are valid
  * INPUT: a command (not assumed to be valid) and address method of op1, op2
- * OUTPUT: 0 if valid, flags of appropriate errors if there are (WRNG_CMD, WRNG_OP1, WRNG_OP2)
+ * OUTPUT: opCode if valid, -1 if invalid
  */
 int isCmdValid(char *cmd, int addOP1, int addOP2) {
-	int hashValue, i = 0;
-	int ret = 0; /* return value */
+	int i = 0;
 
 	/* check that command is valid */
-	hashValue = hashCmdName(cmd);
-	while ((hashValue != legalTable[i].hashName) && (i < NUM_CMD))
-		i++; /* look for command with same hash value */
+	while ((hashCmdName(cmd) != legalTable[i].hashName) && (i++ < NUM_CMD))
+		; /* look for command with same hash value */
 
-	if (i == NUM_CMD) /* no command with same hash value found */
-		return WRNG_CMD;  /* invalid command, cannot continue */
+	/* no command with same hash value found */
+	if (i == NUM_CMD) {
+		printf("error in %s: invalid command", cmd);
+		return -1;  /* invalid command, cannot continue */
+	}
 
 	/* check that first operand is in valid addressing method */
-	if (addOP1 & legalTable[i].firstOpAdd)
-		ret += WRNG_OP1;
+	if (addOP1 & legalTable[i].firstOpAdd) {
+		printf("error in %s: invalid addressing method for operand 1\n", cmd);
+		return -1; /* invalid command */
+	}
 
 	/* check that second operand is in valid addressing method */
-	if (addOP2 & legalTable[i].secOpAdd)
-		ret += WRNG_OP2;
+	if (addOP2 & legalTable[i].secOpAdd) {
+		printf("error in %s: invalid addressing method for operand 2\n", cmd);
+		return -1; /* invalid command */
+	}
 
-	return ret;
+	/* return combination of opCode and funct, the caller function can calculate these values
+	 * the combination proves that each return value is unique */
+	return legalTable[i].opCode * NUM_CMD + legalTable[i].funct;
 }
