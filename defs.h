@@ -36,7 +36,7 @@ int instructionImage[MAX_PROGRAM_SIZE];
 int IC; /* instruction counter */
 int DC; /* data counter  */
 
-enum { IMM = 1, DIR = 2, REL = 4, REG = 8 }; /*enum for operand types*/
+enum { IMM = 0, DIR = 1, REL = 2, REG = 3 }; /*enum for operand types*/
 
 typedef struct operandNode * optr; /*pointer to operandNode object*/
 
