@@ -37,6 +37,7 @@ int IC; /* instruction counter */
 int DC; /* data counter  */
 
 enum { IMM = 0, DIR = 1, REL = 2, REG = 3 }; /*enum for operand types*/
+enum { ABS = 0, RELOC = 1, EXT = 2 }; /*enum for coding types*/
 
 typedef struct operandNode * optr; /*pointer to operandNode object*/
 
