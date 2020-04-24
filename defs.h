@@ -29,6 +29,9 @@ typedef struct instInfo {
 	int secondOp; /* valid addressing methods for first arg */
 };
 
+typedef struct psw_register {
+	unsinged int zero_flag:1;
+};
 
 int lineNumber;
 int dataImage[MAX_PROGRAM_SIZE];
