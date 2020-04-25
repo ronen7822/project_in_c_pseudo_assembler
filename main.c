@@ -10,7 +10,7 @@ int main( int argc, char *argv[] )
  
     if ( ! num_of_files ) /* no files were given  */
     {
-        fprintf( stderr, "\nEROR - there are no given files in the command line\n",); 
+        fprintf( stdout , "\nEROR - there are no given files in the command line\n",); 
         return 0;
     }
    
@@ -18,18 +18,24 @@ int main( int argc, char *argv[] )
     {        
         if (  ! check_name( argv[curr_file] ) ) /* asserts the the file name ends with ".as" */
         {
-            fprintf( stderr, "EROR - the file %s does not ends with \".as \" \n", argv[curr_file]);
+            fprintf( stdout, "EROR - the file %s does not ends with \".as \" \n", argv[curr_file]);
             curr_file++ ;
             continue ; /* continue to the next file */
         }     
         else if( !( fp = fopen( argv[curr_file], "r+") ) ) /* asserts that the file can be found and opended */
         {
-            fprintf( stderr, "\nEROR - the file %s can not be found or open\n", argv[curr_file]);
+            fprintf( stdout, "\nEROR - the file %s can not be found or open\n", argv[curr_file]);
             curr_file++ ;
             continue ; /* continue to the next file */
         } 
 
-        assembler(fp); /* builds the assemblerd files */
+        if ( ! first_scan(fp) ) 
+	     fprintf( stdout , "\nEROR - the file %s filed in the first scan\n", argv[curr_file]);
+	else if (! second_scan(fp) )
+	     fprintf( stdout , "\nEROR - the file %s filed in the seocnd scan\n", argv[curr_file]);
+	else /* no errors in the scaning */
+             fprintf( stdout , "\n - the file %s was assembeld sucssesfuly\n", argv[curr_file]);		
+ 
         fclose(fp); /* closing the file */
         curr_file++ ;
     }
