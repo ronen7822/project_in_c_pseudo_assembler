@@ -10,11 +10,12 @@
 #define MMRY_OFFSET 100  /*memory address of the assembled program after it was loaded to memory*/
 #define MAX_LBL_SZ 31  /*max char count for labe name*/
 
+
 /*Char array to hold the guidance types */
 const char *guidanceTypes[]={".data",".string",".extern",".code",".entry",NULL};
 
 /*Char array to hold the instruction names */
-const char *instructionNames[]={"mov","cmp","add","sub","not","clr","lea","inc","dec","jmp","bne","red","prn","jsr","rts","stop",NULL};
+const char *instructionNames[]={"mov","cmp","add","sub","lea","clr","not","inc","dec","jmp","bne","jsr","red","prn","rts","stop",NULL};
 
 
 typedef struct instInfo {
@@ -37,7 +38,7 @@ extern int IC; /* instruction counter */
 extern int DC; /* data counter  */
 
 typedef enum labelType {DATA,CODE,EXTERNAL} labelType;/*enum for label types*/
-enum { IMM = 0, DIR = 1, REL = 2, REG = 3 }; /*enum for operand types*/
-enum { ABS = 0, RELOC = 1, EXT = 2 }; /*enum for coding types*/
+typedef enum instAddressType {NON =-1, IMM = 0, DIR = 1, REL = 2, REG = 3 }; /*enum for operand types*/
+typedef enum codingType { ABS = 0, RELOC = 1, EXT = 2 }; /*enum for coding types*/
 
 

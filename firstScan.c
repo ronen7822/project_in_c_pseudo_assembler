@@ -5,10 +5,11 @@
 /* the first scan in the dual scan algorithm, no header file for now, could be added in the future */
 int first_scan( FILE * fp)
 {
-    char  curr_line [MAX_LINE_LENGTH]; /* the current line */
+    extern int lineNumber = 0; /* holds the number of the current line */
+    char  curr_line [MAX_LINE_LENGTH]; /* the current line text */
     char label_name [MAX_LINE_LENGTH] ;
     int i; 
-    int num_of_bytes ;
+    int num_of_words ;
     int eror_flag = 0; /* indicates if eror was found */
     int symbol_flag =0; /* indicates if symbol was counterd */
     extern int DCF; /* data counter final */
@@ -21,6 +22,8 @@ int first_scan( FILE * fp)
     /* the unknown methods shoud be defined the other files */
     while ( fscanf(fp, "%s", curr_line) ) /* stages 2-16 */ 
     {
+	lineNumber++ ;
+
         if ( curr_line[0] == ';' )
              continue; /* skips ';' because it is documention in assembly */
 
@@ -37,7 +40,9 @@ int first_scan( FILE * fp)
                          eror_flag = 1; /* the lable already exist in symbol table*/
              }
              /* puts the data in the data image - stage 7 */
-             storeData( curr_line )  ;            
+	     if ( is_guidance( curr_line, 1 ) == 1)  /* .data in this case */
+             	  storeData( curr_line )  ;            
+	     storeString( curr_line ); /* .string in this case */
          }
  
          if ( is_extern(curr_line, 0)  || is_entry(curr_line, 0) ) /* stage 8 */
@@ -64,18 +69,18 @@ int first_scan( FILE * fp)
          if ( ! search_oper_in_legalTable( curr_line ) ) /* stage 12 */ 
                 eror_flag = 1; /* operation does not exist*/
 
-         num_of_bytes = analyze_operation( curr_line ) ; /* stage 13 */
+         num_of_words = analyze_operation( curr_line ) ; /* stage 13 */
        
          build_word(curr_line , 0 ) ; /* stage 14 */
-         for (i=1; i++; i<num_of_bytes) 
+         for (i=1; i++; i<num_of_words) 
          {
               if ( immidiate_addressing(curr_line, i) )
                    build_word(curr_line , i); /* builds the word in maching code */
          }
      
-         save_counters(curr_line, num_of_bytes, IC); /* stage 15 */
+         save_counters(curr_line, num_of_words, IC); /* stage 15 */
       
-         IC = IC + num_of_bytes ; /* stage 16 */
+         IC = IC + num_of_words ; /* stage 16 */
          symbol_flag = 0;
     }
 
@@ -86,7 +91,7 @@ int first_scan( FILE * fp)
     DCF = DC; /* stage 18 */
     ICF = IC;
 
-    updateDataLabels( ICF ) ; /* stage 19 */
+    updateDataLabels( ICF ) ; /* adds ICF value to all the lablels in the symbol list - stage 19 */
 
     return 1 ; /* indicates to the main method to start the second scan. stage 20 */ 
 }
