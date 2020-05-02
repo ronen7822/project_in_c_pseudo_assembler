@@ -50,7 +50,29 @@ static int isRegister(char *);
 int isLegitLabelName(char *);	
 
 /*saves data guidance information to dataImage. expects pointer to string representation of data value*/
-int storeData(char *);												
+int storeData(char *);		
+
+/*saves string guidance information to dataImage. expects pointer to string value*/					
+int storeString(char *);						
 
 /*check correct comma placement in string, expects pointer to string*/
-int checkComma(char *);			
+int checkComma(char *);		
+
+/*parse instruction, check if instruction is legal and save it to instructionImage. expects instruction type, pointer to instruction assembly code*/
+int processInstruction(int, char * )
+
+/*saves instruction to instructionImage array and saves space in array for its operand values. 
+expects instruction type, source operand type, dest operand type*/
+int storeInstruction(int, int, int);	
+
+/*checks if source operand type is compatible with instruction type, returns 1 if yes, 0 otherwise. expects instruction type and operand type*/
+int isSourceOperandCompatible(int, int);			
+
+/*checks if source and dest operands types are compatible with instruction type, returns 1 if yes, 0 otherwise. expects instruction type , source operand type and dest operand type*/
+int isDestOperandCompatible(int, int);				
+
+/*checks operand type. expect pointer to string representation of operand*/
+int getOperandType(char *);
+
+/*removes redundant whitespaces from a given line fo assembly code. exspects a pointer to char array*/
+void removeRedundantSpaces(char *);
