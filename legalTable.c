@@ -3,7 +3,7 @@
 #include <limits.h>
 #include <string.h>
 #include <ctype.h>
-#include "defs.h"
+#include "def.h"
 
 #define NUM_CMD 16 /* number of commands */
 #define MAX_ARG_LEN 4 /* maximum length of command */
@@ -75,10 +75,10 @@ int initLegalTable() {
 
 		/* same of second operand */
 		if (tempOP2[0] == '*')
-			legalTable[i].firstOpAdd = 0;
+			legalTable[i].secOpAdd = 0;
 		else {
-		for (j = 0; tempOP2[j]; j++)
-			legalTable[i].secOpAdd += (tempOP2[j] - '0')*pow(2,j);
+			for (j = 0; tempOP2[j]; j++)
+				legalTable[i].secOpAdd += (tempOP2[j] - '0')*pow(2,j);
 		}
 
 	}

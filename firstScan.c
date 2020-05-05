@@ -1,98 +1,125 @@
 #include "def.h"
-#include "legalTable.h"
-#include "parsing.h"
+#include "legalTable.c"
+#include "parse.c"
+#include "symbolTable.c"
+/* #include "machineCode.c" */
+
+#include <string.h>
+
+
+int calcWordNum(int op1, int op2);
 
 /* the first scan in the dual scan algorithm, no header file for now, could be added in the future */
-int first_scan( FILE * fp)
+int first_scan(FILE *fp)
 {
-    extern int lineNumber = 0; /* holds the number of the current line */
-    char  curr_line [MAX_LINE_LENGTH]; /* the current line text */
-    char label_name [MAX_LINE_LENGTH] ;
-    int i; 
-    int num_of_words ;
-    int eror_flag = 0; /* indicates if eror was found */
-    int symbol_flag =0; /* indicates if symbol was counterd */
-    extern int DCF; /* data counter final */
-    extern int ICF; /* instructiom counter final */
-    DC = 0;
-    IC = MMRY_OFFSET;
-  
-    rewind (fp); /* sets the pointer to the begining of the file*/
-  
-    /* the unknown methods shoud be defined the other files */
-    while ( fscanf(fp, "%s", curr_line) ) /* stages 2-16 */ 
-    {
-	lineNumber++ ;
+	char *currLine = calloc(MAX_LN_LEN, sizeof(char)); /* the current line text */
+	char *labelName = calloc(MAX_LN_LEN, sizeof(char)); /* holds the label, if exist. can hold a full line - for error detection */
+	char* argv[MAX_OP_NUM]; /* holds arguments for command statements */
 
-        if ( curr_line[0] == ';' )
-             continue; /* skips ';' because it is documention in assembly */
+	int op1Add, op2Add, argc, wordNum;
+	int errorFlag = 0, symbolFlag; /* flags indicate on errors, symbol in line */
+	int contInd; /* index of the start of the statement after the label */
 
-        if ( is_symbol( curr_line , 0) ) /* stage 3 */
-             symbol_flag = 1; /* symbol was counterd  - stage 4 */
+	enum guideType guideType; /* used to hold type of guidance for guidance statement */
 
- 	if ( is_guidance( curr_line, 1 ) ) /*  if it is guidance line - stage 5 */
-        {
-             if ( symbol_flag ) /* stages 6-7 in the algorithm */
-             {
-                  /* adds the lable to the symbol table*/
-                  label_name  = extract_word( curr_line, 0 ) ; /* gets the name of the label */
-                  if( ! addLabelToList ( label_name, DATA, DC) )
-                         eror_flag = 1; /* the lable already exist in symbol table*/
-             }
-             /* puts the data in the data image - stage 7 */
-	     if ( is_guidance( curr_line, 1 ) == 1)  /* .data in this case */
-             	  storeData( curr_line )  ;            
-	     storeString( curr_line ); /* .string in this case */
-         }
- 
-         if ( is_extern(curr_line, 0)  || is_entry(curr_line, 0) ) /* stage 8 */
-         {
-             if ( is_entry(curr_line, 0) ) /* stage 9 */
-                 continue; /* will be taken care of in the second scan */
-             else /* is external.  stage 10 */
-             {
-                  label_name [] = extract_word( curr_line, 1 ) ; /* gets the name of the external label */
-                  addLabelToList( label_name, EXTERNAL, 0) ;
-             }
-         }
-        
-         /* it is command line stges 11-16 */
-         if ( symbol_flag ) 
-         {
-               /* adds the lable to the symbol table*/
-               label_name  = extract_word( curr_line, 0) ; 
+	union dataContent { /* holds data for data image */
+		int data[(MAX_LN_LEN - strlen(".data ")) / 2 + 1]; /* maximum numbers in one line */
+		char string[MAX_LN_LEN - strlen(".string ") - 2]; /* longest string */
+	} dataContent;
 
-               if( ! addLabelToList (label_name, CODE, IC) )
-                      eror_flag = 1; 
-         }
-        
-         if ( ! search_oper_in_legalTable( curr_line ) ) /* stage 12 */ 
-                eror_flag = 1; /* operation does not exist*/
+	extern int DCF; /* data counter final */
+	extern int ICF; /* instruction counter final */
 
-         num_of_words = analyze_operation( curr_line ) ; /* stage 13 */
-       
-         build_word(curr_line , 0 ) ; /* stage 14 */
-         for (i=1; i++; i<num_of_words) 
-         {
-              if ( immidiate_addressing(curr_line, i) )
-                   build_word(curr_line , i); /* builds the word in maching code */
-         }
-     
-         save_counters(curr_line, num_of_words, IC); /* stage 15 */
-      
-         IC = IC + num_of_words ; /* stage 16 */
-         symbol_flag = 0;
-    }
+	rewind (fp); /* sets the pointer to the begining of the file*/
 
-    /* eror_flag is set to 1 if eror was found in the firs scan, stage 17 */
-    if ( eror_flag )       
-        return 0; /* indicates that eror was found*/
-     
-    DCF = DC; /* stage 18 */
-    ICF = IC;
+	/* reset IC, DC. TODO: why do they external? */
+	DC = 0;
+	IC = MMRY_OFFSET;
 
-    updateDataLabels( ICF ) ; /* adds ICF value to all the lablels in the symbol list - stage 19 */
+	while (fgets(currLine, MAX_LN_LEN + 1, fp)) { /* stages 2-16 */
+		symbolFlag = 0; /* reset symbolFlag */
+		++lineNumber;
 
-    return 1 ; /* indicates to the main method to start the second scan. stage 20 */ 
+		/* skip comments */
+		if (currLine[0] == ';')
+			continue;
+
+		/* look for symbols - stages 3,4 */
+		if ((labelName = getLabel(currLine)) != NULL) {
+			if (labelValid(labelName) < 0)
+				errorFlag = -1;
+			symbolFlag = 1;
+		}
+
+
+		/* set line pointer to be right after the label (the label is irrelevant for the rest of the line) */
+		currLine = ((labelName != NULL) ? strchr(currLine, ':') + sizeof(char) : currLine);
+
+		if ((guideType = getGuideType(currLine)) < 0)
+			errorFlag = -1; /* error code */
+		else if (guideType > 1) { /* 0 mean no guide in this line */
+
+			/* stage 9. if guideType is ".entry", it will be defined in 2nd scan */
+			if (guideType == ENTRY) {
+				if (labelName != NULL)
+					printf("warning in %d: a label in entry statement is meaningless", lineNumber);
+				continue;
+			}
+
+			/* stage 10: get label og extern statement */
+			if (guideType == EXTERN) {
+				if (labelName != NULL)
+					printf("warning in %d: a label in extern statement is meaningless", lineNumber);
+
+				/* parse new label name to add to symbol table */
+				labelName = getAnotherLabel(currLine + strlen(".extern ")*sizeof(char));
+				symbolFlag = 1;
+			}
+
+			/* if there is a symbol add symbol to symbol table */
+			if ((symbolFlag) && (addSymbol(labelName, guideType) < 0))
+				errorFlag = -1;
+
+			/* stages 5-7 */
+			if (guideType == DATA) {
+				/* parse and add data */
+			}
+			else if (guideType == STR) {
+				/* parse and add string */
+			}
+
+			continue; /* in stages 7,10 we back to level 2 */
+		}
+
+		/* stage 11 */
+		if (symbolFlag)
+			addSymbol(labelName, CODE);
+
+		argc = parseCommand(argv, currLine);
+		op1Add = getAddMthd(argv[1]);
+		op2Add = getAddMthd(argv[2]);
+
+		/* check command validity: command exist and operands are in right adreesing method */
+		if (isCmdValid(argv[0], op1Add, op2Add) < 0) /* להדפיס שגיאה גם עבור האופרנד השני */
+			errorFlag = -1; /* error code */
+
+		wordNum = calcWordNum(op1Add, op2Add);
+
+		/* build binary code */
+
+		/* precede IC */
+		IC += wordNum;
+	}
+
+	/* errorFlag is set to 1 if an error detected in the scan, stage 17 */
+	if (errorFlag < 0)
+		return -1; /* indicates that eror was found*/
+
+	DCF = DC; /* stage 18 */
+	ICF = IC;
+
+	updateDataLabels(ICF); /* adds ICF value to all the lablels in the symbol list - stage 19 */
+
+	return 0; /* success code */
 }
 
