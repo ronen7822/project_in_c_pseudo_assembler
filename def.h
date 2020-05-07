@@ -32,6 +32,9 @@ extern int instImg[MAX_PROGRAM_SIZE];
 extern int IC; /* instruction counter */
 extern int DC; /* data counter  */
 
+/*Char array to hold the instruction names */
+const char *instructionNames[]={"mov","cmp","add","sub","lea","clr","not","inc","dec","jmp","bne","jsr","red","prn","rts","stop",NULL};
+
 enum guideType {NO_GUIDE, DATA, STR, ENTRY, EXTERN, CODE};/*enum for label types*/
 enum instAddressType {NON =-1, IMM = 0, DIR = 1, REL = 2, REG = 3 }; /*enum for operand types*/
 enum codingType { ABS = 0, RELOC = 1, EXT = 2 }; /*enum for coding types*/
