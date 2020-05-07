@@ -12,6 +12,6 @@ int getAddMthd(char* op);
 
 int parseCommand(char *argv[MAX_OP_NUM], char* line);
 
-int *getNumbers(char* line);
+int getNumbers(char* line);
 
-char *getString(char* line);
+char getString(char* line);
