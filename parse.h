@@ -14,4 +14,4 @@ int parseCommand(char *argv[MAX_OP_NUM], char* line);
 
 int getNumbers(char* line);
 
-int getString(char* line);
+int getString(char* line,  dataContent array);
