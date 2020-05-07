@@ -127,17 +127,21 @@ int getAddMthd(char* op) {
 }
 
 
+
 /* getStirng - extracts the numbers into array of chars inside dataContent
  * INPUT: a line and dataContent union
  * OUTPUT: integer. -1 in case of an eror, 0 otherwise
  */
-int getNumbers(char* line, dataContent array){
+int getNumbers(char* line, dataContent* array){
 
 	char *token;
 	char *endChar = NULL; 
 	int tempNum, i = 0;
 
-	if( line[0] == ",")
+	while( line[i] == ' ' || line[i] == '\t' ) /* skips white spaces */
+		i++;
+
+	if( line[i] == ",")
 	{
 		printf("Error in line %d: Data guidance parameter is incorrect, aborting storage action\n", lineNumber);
 		return -1; /* eror code */
@@ -150,12 +154,13 @@ int getNumbers(char* line, dataContent array){
 
 		if(*endChar != '\0') /* the token doesn't ends with a digit */
 		{
-			printf("Error in line %d: Could not parse natural number in parameter %s\n", lineNumber, token);
+			printf("Error in line %d: could not parse natural number in parameter %s\n", lineNumber, token);
 			return -1;
 		}
-		if(tempNum >= 8388608 || tempNum < -8388608 ) /* the posible range for 2^24 bits in every word of memory */
+
+		if( tempNum >= pow(2, 23) || tempNum < pow(2, 23) ) /* the posible range for 2^24 bits in every word of memory */
 		{
-			printf("Error in line %d: Natural number parameter %s is too large to fit in memory\n", lineNumber, token);
+			printf("Error in line %d: natural number parameter %s is too large to fit in memory\n", lineNumber, token);
 			return -1;
 		}
 		array.data[i] = tempNum; /* stores the number in the union */
@@ -163,25 +168,32 @@ int getNumbers(char* line, dataContent array){
 		i++ ;
 	}
 
-	array.data[i] = 16777216;/* 2^24 - sign to end of numbers */
+	array.data[i] = 16777216; /* 2^24 - sign to end of numbers . use other method to represnt the end of the array*/
 	return 0;
 }
-
-
+	
 /* getStirng - extracts string into array of chars inside dataContent
  * INPUT: a line and dataContent union
  * OUTPUT: integer. -1 in case of an eror, 0 otherwise
  */
-int getString(char* line, dataContent array){
+int getString(char* line, dataContent* array){
 
 	int i=0;
+	
+	while( line[i] == ' ' || line[i] == '\t' ) /* skips white spaces */
+		i++;
 
-	if ( line[0] != '"') {
+	if ( line[i] != '"') {
 		printf("Error in line %d: absence of \" sign in start of %s\n", lineNumber, line );
 		return -1; /* eror code */
 	}
 	
 	while( line[i] != '"' ) {
+
+		if ( !( line[i] >= 32 && line[i] < 126)){ /* checks wheter line[i] is invisible character  */
+			printf("Error in line %d: could not parse %c into visible character  \n", lineNumber,line[i]);
+			return -1;
+		}	
 
 		if ( line[i] == '\0' ) {
 			printf("Error in line %d: absence of \" sign in end of %s\n", lineNumber, line );
@@ -191,8 +203,8 @@ int getString(char* line, dataContent array){
 		i++;
 	}
 	
-	if ( line[i] != '\0' ) {
-		printf("Error in line %d: Extraneous text after end of string %s\n", lineNumber, line );
+	if ( line[i] != '\0' ) { /* extraneous text after '"' sign */
+		printf("Error in line %d: extraneous text after end of string %s\n", lineNumber, line );
 		return -1;
 	}
 
@@ -200,31 +212,122 @@ int getString(char* line, dataContent array){
 	return 0;
 }
 
-/*check correct comma placement in string, expects pointer to string*/
-int checkComma(char *str){
 
-	if(*str == ',') /* if the string starts with comma sign */
-	{
-		printf("Error in line %d: Comma is dispositioned\n", lineNumber);
-		return -1; /* eror code */
-	}
-	str++;
-	while(*str)
-	{
-		if(*str == ',')
-		{
-			if(*(str+1) == '\0') /* comma in the end of sentence. e.g: "abc,de," */
-			{
-				printf("Error in line %d: Comma is dispositioned\n", lineNumber);
-				return -1;
+/* parseCmd - take command and extract the args
+ * parseCmd check the command syntax (commas, no more than 4 args, no invalid chars, etc.)
+ * but NOT the command context (correct command to run, number of args correlate to command, types of args etc.)
+ * INPUT: a command (cmd) and array to store the arguments
+ * OUTPUT: argument count (argc), -1 for invalid syntax. the arguments in argv
+ */
+int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
+
+	enum inWord {OUTWORD, INWORD} iw = OUTWORD; /* mark end of arg */
+	enum isComma {FORBID_COMMA, NEED_COMMA, WAS_COMMA} ic = FORBID_COMMA; /* enforce right use in commas */
+	int i, argStart, argc = 0, errorFlag = 0;
+
+	flushArgv(argv); /* flush (reset, clean) argv before another use */
+
+	for (i = 0, argStart = 0; cmd[i] || (argc == MAX_OP_NUM ) ; ++i) {
+
+		/* CASE: white space. DO: enter word into argv[argc++] */
+		if (cmd[i] == ' ' || cmd[i] == '\t' || cmd[i] == '\n' || cmd[i] == EOF) {
+			if (iw == INWORD) {
+				if ((argc = addArg (cmd, argv, i, argStart, argc)) < 0)
+					errorFlag = 1;
+				ic = argc > 1 ? NEED_COMMA : FORBID_COMMA;
+				iw = OUTWORD;
 			}
-			if(*(str+1) == ',') /* two or more comma signs in row. e.g: "abc, ,de" */
-			{
-				printf("Error in line %d: Multiple consecutive commas\n", lineNumber);
-				return -1;
+			/* CASE: end of line */
+			if (cmd[i] == '\n' || cmd[i] == EOF || cmd[i] == '\0')
+				break;
+		}
+
+		/* CASE: no white space or EOL and argc = 3: extraneous text after end of command */
+		else if (argc >= MAX_OP_NUM ) {
+			printf("error in %d: extraneous text after end of command\n", lineNumber);
+			errorFlag = 1;
+		}
+
+		/* CASE: comma. DO: same as white space but check for no double commas */
+		else if (cmd[i] == ',') {
+			if (iw == INWORD) { /* case of end of word */
+
+				if ( (argc = addArg(cmd, argv, i, argStart, argc)) < 0 )
+					errorFlag = 1; /* error code. error message printed in addArg */
+				if (argc == MAX_OP_NUM ){
+					printf("error in %d: extraneous text after end of command\n", lineNumber);
+					errorFlag = 1;
+				}
+				ic = argc > 1 ? NEED_COMMA : FORBID_COMMA;
+				iw = OUTWORD;
+			}
+
+			if (ic == FORBID_COMMA){ /* error: case of wrong comma */
+				printf("error in %d: illegal comma\n", lineNumber);
+				errorFlag = 1;
+			}
+			else if (ic == WAS_COMMA){ /* error: case of double commas */
+				printf("error in %d: multiple consecutive commas\n", lineNumber);
+				errorFlag = 1;
+			}
+			else if (ic == NEED_COMMA)
+				ic = WAS_COMMA;
+
+		}
+
+		/* CASE: name of command, variable or a number */
+		else if ( isalnum(cmd[i]) || cmd[i] == '+' || cmd[i] == '-') {
+
+			if (ic == NEED_COMMA) {
+				printf("error in %d: missing comma\n", lineNumber);
+				errorFlag = 1; /* error code */
+			}
+
+
+			if (iw == OUTWORD) {
+				iw = INWORD;
+				argStart = i; /* the first char of the next arg */
 			}
 		}
-		str++;
+
+		/* CASE: incalid character*/
+		else {
+			printf("error in %d: at %d: invalid character %c (ascii = %d)\n", lineNumber, i + 1, cmd[i], cmd[i]);
+			errorFlag = 1;
+		}
 	}
-	return 0; 
+	
+	if ( errorFlag )
+		return -1; /* error occurred */
+
+	return argc; 
+}
+
+
+/* addArg - subfunction of parseCmd. Called to add argument into argv
+ * if failed, return -1 if fail (too long arg), update arg count (argc) if succeed
+ * INPUT: a command, indexes of the arg (argStart -> i), argv, argc
+ * OUTPUT: argc value (-1 if fail)
+ */
+static int addArg(char* cmd, char *argv[MAX_OP_NUM ], int i, int argStart, int argc) {
+
+	if (i - argStart > MAX_LBL_SZ)
+		printf("error in %d: arg %d is too long, maximum length is %d\n",lineNumber, argc, MAX_LBL_SZ);
+	else {
+		strncpy(argv[argc], &cmd[argStart], i - argStart);
+		argv[argc++][i - argStart] = '\0';
+	}
+
+	return argc;
+}
+
+/* flushArgv - flush argv for another use
+ * INPUT: argv
+ * OUTPUT: clean argv (all elements are empty strings
+ */
+static void flushArgv(char *argv[MAX_OP_NUM]) {
+
+	int i;
+	for (i = 0; i < MAX_OP_NUM; i++)
+		*argv[i] = '\0';
 }
