@@ -127,22 +127,20 @@ int getAddMthd(char* op) {
 }
 
 
-/* saves data guidance information to dataImage. expects pointer to string representation of data value 
- * INPUT: a line
+/* getStirng - extracts the numbers into array of chars inside dataContent
+ * INPUT: a line and dataContent union
  * OUTPUT: integer. -1 in case of an eror, 0 otherwise
  */
-int getNumbers(char* line){
+int getNumbers(char* line, dataContent array){
 
 	char *token;
 	char *endChar = NULL; 
-	int tempDC = DC;
-	int tempNum;
+	int tempNum, i = 0;
 
-	if( checkComma(line) )
+	if( line[0] == ",")
 	{
 		printf("Error in line %d: Data guidance parameter is incorrect, aborting storage action\n", lineNumber);
-		DC = tempDC;
-		return -1;
+		return -1; /* eror code */
 	}
 
 	token = strtok(line,","); /* brakes the string to tokens of possible integers */
@@ -153,22 +151,23 @@ int getNumbers(char* line){
 		if(*endChar != '\0') /* the token doesn't ends with a digit */
 		{
 			printf("Error in line %d: Could not parse natural number in parameter %s\n", lineNumber, token);
-			DC = tempDC;
 			return -1;
 		}
 		if(tempNum >= 8388608 || tempNum < -8388608 ) /* the posible range for 2^24 bits in every word of memory */
 		{
 			printf("Error in line %d: Natural number parameter %s is too large to fit in memory\n", lineNumber, token);
-			DC = tempDC;
 			return -1;
 		}
-		dataImage[DC] = tempNum; /* stores the number in the data image */
-		DC++;
+		array.data[i] = tempNum; /* stores the number in the union */
 		token = strtok(NULL,",");
+		i++ ;
 	}
+
+	array.data[i] = 16777216;/* 2^24 - sign to end of numbers */
 	return 0;
 }
-	
+
+
 /* getStirng - extracts string into array of chars inside dataContent
  * INPUT: a line and dataContent union
  * OUTPUT: integer. -1 in case of an eror, 0 otherwise
