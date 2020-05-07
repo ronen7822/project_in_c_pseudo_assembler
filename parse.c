@@ -138,7 +138,7 @@ int getNumbers(char* line){
 	int tempDC = DC;
 	int tempNum;
 
-	if(!checkComma(line))
+	if( checkComma(line) )
 	{
 		printf("Error in line %d: Data guidance parameter is incorrect, aborting storage action\n", lineNumber);
 		DC = tempDC;
@@ -194,7 +194,7 @@ int checkComma(char *str){
 	if(*str == ',') /* if the string starts with comma sign */
 	{
 		printf("Error in line %d: Comma is dispositioned\n", lineNumber);
-		return 0;
+		return -1; /* eror code */
 	}
 	str++;
 	while(*str)
@@ -204,15 +204,15 @@ int checkComma(char *str){
 			if(*(str+1) == '\0') /* comma in the end of sentence. e.g: "abc,de," */
 			{
 				printf("Error in line %d: Comma is dispositioned\n", lineNumber);
-				return 0;
+				return -1;
 			}
 			if(*(str+1) == ',') /* two or more comma signs in row. e.g: "abc, ,de" */
 			{
 				printf("Error in line %d: Multiple consecutive commas\n", lineNumber);
-				return 0;
+				return -1;
 			}
 		}
 		str++;
 	}
-	return 1;
+	return 0; 
 }
