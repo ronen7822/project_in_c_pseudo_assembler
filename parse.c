@@ -169,22 +169,35 @@ int getNumbers(char* line){
 	return 0;
 }
 	
-/* saves string guidance information to dataImage. expects pointer to string value 
- * INPUT: a line
+/* getStirng - extracts string into array of chars inside dataContent
+ * INPUT: a line and dataContent union
  * OUTPUT: integer. -1 in case of an eror, 0 otherwise
  */
-int getString(char* line){
+int getString(char* line, dataContent array){
 
 	int i=0;
 
-	while(str[i] != '\0')
-	{
-		dataImage[DC] = str[i]; /* stores the char in the data image  */
-		i++;
-		DC++;
+	if ( line[0] != '"') {
+		printf("Error in line %d: absence of \" sign in start of %s\n", lineNumber, line );
+		return -1; /* eror code */
 	}
-	dataImage[DC] = '\0'; 
-	DC++;
+	
+	while( line[i] != '"' ) {
+
+		if ( line[i] == '\0' ) {
+			printf("Error in line %d: absence of \" sign in end of %s\n", lineNumber, line );
+			return -1;
+		}
+		array.string[i] = line[i]; /* stores the char in the union  */
+		i++;
+	}
+	
+	if ( line[i] != '\0' ) {
+		printf("Error in line %d: Extraneous text after end of string %s\n", lineNumber, line );
+		return -1;
+	}
+
+	array.string[i] = '\0'; 
 	return 0;
 }
 
