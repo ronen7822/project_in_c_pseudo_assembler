@@ -189,8 +189,8 @@ int getString(char* line){
 }
 
 /*check correct comma placement in string, expects pointer to string*/
-int checkComma(char *str)
-{
+int checkComma(char *str){
+
 	if(*str == ',') /* if the string starts with comma sign */
 	{
 		printf("Error in line %d: Comma is dispositioned\n", lineNumber);
