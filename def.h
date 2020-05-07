@@ -12,6 +12,7 @@
 #define MMRY_OFFSET 100  /*memory address of the assembled program after it was loaded to memory*/
 #define MAX_LBL_SZ 31  /*max char count for labe name*/
 #define MAX_OP_NUM 3 /* maximum args in one line (command name, 1st & 2nd operands */
+#define INST_NUM 16 /* maximum args in one line (command name, 1st & 2nd operands */
 
 typedef struct instInfo {
 	char *instName; /* insturction name */
