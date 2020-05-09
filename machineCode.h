@@ -33,25 +33,7 @@ typedef struct {
 	int L;
 } linePlus;
 
-line instIamge[MAX_PROGRAM_SIZE]; /* MAX_PROGRAM_SIZE is set to 256 */
+line instIamge[MAX_PROGRAM_SIZE]; /* MAX_PROGRAM_SIZE is set to be MAX_PROGRAM_SIZE */
 /* line dataImage[MAX_PROGRAM_SIZE]; */
-/* e.g : mov, r1, #4, address(r1), address(4) */
 
-
-/* extracrts the opCode according to the instruction name */
-static int extractOpCode (char* commandName );
-
-/* extracrts a number from the string */
-static int extractNum (char *str);
-
-/* extracrts the funct according to the instruction name */
-static int extractFunct (char* commandName );
-
-/* checks if the string is a register name */
-static int isRegister(char *str);
-
-/* should be dfined in  symbolTable.c */
-int isExternal(char *label); 
-
-/* should be dfined in  symbolTable.c */
-int findMemAddress( char * label); 
+int buildBinaryCode(int opfunct, char* srcOper, char* destOper, int sourceAdd, int destAdd);
