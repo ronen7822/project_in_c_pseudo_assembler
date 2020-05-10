@@ -35,17 +35,20 @@ static int codeArg(char *arg, int AddMethod, int offset) {
 		return 0; /* i.e. no word of data added */
 	case IMM:
 		instIamge[IC + offset].value.data = atoi(arg);
+		instIamge[IC + offset].value.labelName = NULL;
 		instIamge[IC + offset].value.A = 1;
 		instIamge[IC + offset].value.R = 0;
 		instIamge[IC + offset].value.E = 0;
 		break;
 	case DIR:
+		instIamge[IC + offset].value.labelName = arg;
 		instIamge[IC + offset].value.data = 0;
 		instIamge[IC + offset].value.A = 0;
 		instIamge[IC + offset].value.R = 1;
 		instIamge[IC + offset].value.E = 0;
 		break;
 	case REL:
+		instIamge[IC + offset].value.labelName = arg;
 		instIamge[IC + offset].value.A = 1;
 		instIamge[IC + offset].value.R = 0;
 		instIamge[IC + offset].value.E = 0;
