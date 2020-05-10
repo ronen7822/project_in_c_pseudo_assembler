@@ -3,7 +3,6 @@
 
 
 typedef struct cmdHeader {
-	char *labelName;
 	unsigned int opCode: 6; /* insturction opCode */
 	unsigned int srcAdress: 2 ; /*  addressing method for destation register */
 	unsigned int srcReg: 3 ; /* source register */
