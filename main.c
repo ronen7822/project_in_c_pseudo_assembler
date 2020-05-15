@@ -8,14 +8,13 @@ int main( int argc, char *argv[] )
     int num_of_files = argc - 1;
     int curr_file = 1; /* index to the current file */
  
-    if ( ! num_of_files ) /* no files were given  */
-    {
+    if ( ! num_of_files ) { /* no files were given  */    
         fprintf( stdout , "\nEROR - there are no given files in the command line\n",); 
         return 0;
     }
    
-    do
-    {        
+    do {
+	    
         if (  ! check_name( argv[curr_file] ) ) /* asserts the the file name ends with ".as" */
         {
             fprintf( stdout, "EROR - the file %s does not ends with \".as \" \n", argv[curr_file]);
@@ -44,8 +43,7 @@ int main( int argc, char *argv[] )
     return 1;
 }
 
-int check_name ( char * file_name)
-{
+int check_name ( char * file_name) {
     int suffix_index = strlen( file_name ) - 4 ;
     const char * suffix = file_name + suffix_index ;
 
