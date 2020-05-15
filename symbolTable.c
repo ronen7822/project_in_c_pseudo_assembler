@@ -106,3 +106,31 @@ int makeEntry( char *labelName){
 	}
 	return 0;
 }
+
+
+/*finds the next entry label in list from current position expects a pointer to the label list 
+ returns pointer to labelNode or NULL if not found */
+symbolNode findEntryLabel(symbolNode *ptr){
+
+	while(ptr){
+		if(ptr->data.isEntry){
+			return ptr;
+		}
+		ptr = ptr->next;
+	}
+	return 0;
+}
+
+
+/*finds the next external label in list from current position expects a pointer to the label list
+ returns pointer to labelNode or NULL if not found*/
+symbolNode findExternalLabel(symbolNode *ptr){
+
+	while(ptr){
+		if(ptr->label.data.isExtern){
+			return ptr;
+		}
+		ptr = ptr->next;
+	}
+	return 0;
+}
