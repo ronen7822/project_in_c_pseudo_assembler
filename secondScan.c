@@ -6,18 +6,18 @@ int seocnd_scan( FILE * fp) {
 	char* argv[MAX_OP_NUM] ; /* holds arguments for command statements */
  	int  erorFlag = 0 ;
 	int lineNumber = 0;
-    int  op1Add, op2Add, guideType, argc, current = 0 ;
+    	int  op1Add, op2Add, guideType, argc, current = 0 ;
 
-    rewind (fp); /* sets the pointer to the begining of the file*/
+    	rewind (fp); /* sets the pointer to the begining of the file*/
 
 
-    while ( fgets(currLine, MAX_LN_LEN + 1, fp) ) /* stages 1-7 */ 
-    {
+    	while ( fgets(currLine, MAX_LN_LEN + 1, fp) ) /* stages 1-7 */ 
+    	{
 		++lineNumber;
 		argc = parseCommand(argv, currLine); /* breakes the line into tokens */
 
-        if ( currLine[0] == ';' )
-            continue; /* skips ';' because it is documention in assembly */
+        	if ( currLine[0] == ';' )
+            		continue; /* skips ';' because it is documention in assembly */
 
 		if ( (labelValid( argv[current] ) >= 0 ) /* stage 2 */
 			current++ ; 		
@@ -26,28 +26,27 @@ int seocnd_scan( FILE * fp) {
         	if  ( guideType == DATA || guideType == STR || guideType == EXTERN  ) /* stage 3 */
             		continue ;
 
-       	if ( guideType == ENTRY )  {   /* stage 4 */ 
+       		if ( guideType == ENTRY )  {   /* stage 4 */ 
 
-           	if ( symbolInTable ( argv[0] ) == NULL )  {
+            		if ( symbolInTable ( argv[0] ) == NULL )  {
 				printf("error in %d: label %s was not found", lineNumber, argv[0] );
-               	erorFlag = 1;
-                continue ;
-            }
+               			erorFlag = 1;
+                		continue ;
+            		}
            		makeEntry ( argv[0] ); /* stage 5 */   
-            	continue ;
-       	}
+            		continue ;
+        	}
 		
 		op1Add = getAddMthd(argv[current+1]);
 		op2Add = getAddMthd(argv[current+2]);
-       	/* stage 6 */
-       	buildBinaryCode2 (argv[current+1],argv[current+2], op1Add,op2Add ) ; 
+       		/* stage 6 */
+       		buildBinaryCode2 (argv[current+1],argv[current+2], op1Add,op2Add ) ; 
         
     	}
 
-   	if ( erorFlag )   /* stage 7 */    
-       	return -1; /* indicates that eror was found*/
+    	if ( erorFlag )   /* stage 7 */    
+        	return -1; /* indicates that eror was found*/
 
-    buildFiles(fp); /* stage 8 */
-    return 1; /* indicates to the main that the seocnd scan terminated correctly*/
+    	buildFiles(fp); /* stage 8 */
+    	return 1; /* indicates to the main that the seocnd scan terminated correctly*/
 }
-
