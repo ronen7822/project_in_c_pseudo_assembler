@@ -40,10 +40,9 @@ int seocnd_scan( FILE * fp, char * fileName) {
 		
 		op1Add = getAddMthd(argv[current+1]);
 		op2Add = getAddMthd(argv[current+2]);
-		opFunct = 1; /* suppose to be function that gets the opcode of the instructio */
-
+		opFunct =  isCmdValid( argv[current], op1Add, op2Add ) ; 
        		/* stage 6 */
-       		buildBinaryCode (opFunct ,argv[current+1],argv[current+2], op1Add,op2Add ) ; 
+       		buildBinaryCode (opFunct , argv[current+1], argv[current+2], op1Add, op2Add ) ; 
         
     	}
 
