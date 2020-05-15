@@ -1,12 +1,13 @@
 #include "def.h"
+#include "def.h"
 
-int seocnd_scan( FILE * fp) {
+int seocnd_scan( FILE * fp, char * fileName) {
 
 	char * currLine [MAX_LINE_LENGTH] ;  /* the current line */
-	char* argv[MAX_OP_NUM] ; /* holds arguments for command statements */
+	char * argv[MAX_OP_NUM] ; /* holds arguments for command statements */
  	int  erorFlag = 0 ;
-	int lineNumber = 0;
-    	int  op1Add, op2Add, guideType, argc, current = 0 ;
+	int  lineNumber = 0;
+    	int  opFunct, op1Add, op2Add, guideType, argc, current = 0 ;
 
     	rewind (fp); /* sets the pointer to the begining of the file*/
 
@@ -39,14 +40,16 @@ int seocnd_scan( FILE * fp) {
 		
 		op1Add = getAddMthd(argv[current+1]);
 		op2Add = getAddMthd(argv[current+2]);
+		opFunct = 1; /* suppose to be function that gets the opcode of the instructio */
+
        		/* stage 6 */
-       		buildBinaryCode2 (argv[current+1],argv[current+2], op1Add,op2Add ) ; 
+       		buildBinaryCode (opFunct ,argv[current+1],argv[current+2], op1Add,op2Add ) ; 
         
     	}
 
     	if ( erorFlag )   /* stage 7 */    
         	return -1; /* indicates that eror was found*/
 
-    	buildFiles(fp); /* stage 8 */
+    	buildFiles(fileName); /* stage 8 */
     	return 1; /* indicates to the main that the seocnd scan terminated correctly*/
 }
