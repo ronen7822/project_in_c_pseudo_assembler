@@ -34,12 +34,12 @@ int buildFiles(char * fileName) {
 	strcpy(entryName, fileName);
    	strcat(entryName, ASM_ENTRIES_SUFF);
 
-	if ( findEntryLabel() >= 0 && (fpEnt = fopen(entryName, "w+")) ) {
-
+	if ( findEntryLabel(head) >= 0 && (fpEnt = fopen(entryName, "w+")) ) {
+		ptr = head;
 		while( ptr = findEntryLabel(ptr) )   /* search for entry symbols */
 			fprintf(fpEnt, "%s %06d\n" ,  ptr->data.name, ptr->data.value ) ;/* prints entry symbols */
 	}
-	else if ( findEntryLabel() >= 0 )
+	else if ( findEntryLabel(head) >= 0 )
 		fprintf( stdout, "\nEROR - could not write the entry file of %s \n", fileName);
 
 	
@@ -48,13 +48,12 @@ int buildFiles(char * fileName) {
 	strcpy(externName, fileName);
    	strcat(externName, ASM_EXTERNALS_SUFF);
 
-	if ( findExternalLabel() >= 0 && (fpExt = fopen( externNAame, "w+")) ) {
-
+	if ( findExternalLabel(head) >= 0 && (fpExt = fopen( externNAame, "w+")) ) {
 		ptr = head; /* the head of the symbolList */
 		while( ptr = findExternalLabel(ptr) )   /* search for enxternal symbols */
 			fprintf(fpExt,"%s %06d \n" , ptr->data.name, ptr->data.value) ;/* prints enxternal symbols */
 	}
-	else if ( findExternalLabel() >= 0 )
+	else if ( findExternalLabel(head) >= 0 )
 		fprintf( stdout, "\nEROR - could not write the entry file of %s \n", fileName);
 
 
