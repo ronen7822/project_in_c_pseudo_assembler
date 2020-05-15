@@ -24,6 +24,8 @@ int buildFiles(char * fileName) {
 		
 		for (i=0 ; i < IDF ; i++ )  /* prints the data image */
 			fprintf(fpOb, "%06d %06x\n" , i+ICF, dataImage[i]) ;
+		
+		fclose(fpOb) ;
 	}
 	else	
 		fprintf( stdout, "\nEROR - could not write the object file of %s \n", fileName);
@@ -38,6 +40,8 @@ int buildFiles(char * fileName) {
 		ptr = head;
 		while( ptr = findEntryLabel(ptr) )   /* search for entry symbols */
 			fprintf(fpEnt, "%s %06d\n" ,  ptr->data.name, ptr->data.value ) ;/* prints entry symbols */
+		
+		fclose(fpEnt) ;
 	}
 	else if ( findEntryLabel(head) >= 0 )
 		fprintf( stdout, "\nEROR - could not write the entry file of %s \n", fileName);
@@ -52,6 +56,8 @@ int buildFiles(char * fileName) {
 		ptr = head; /* the head of the symbolList */
 		while( ptr = findExternalLabel(ptr) )   /* search for enxternal symbols */
 			fprintf(fpExt,"%s %06d \n" , ptr->data.name, ptr->data.value) ;/* prints enxternal symbols */
+		
+		fclose(fpExt) ;
 	}
 	else if ( findExternalLabel(head) >= 0 )
 		fprintf( stdout, "\nEROR - could not write the entry file of %s \n", fileName);
@@ -64,5 +70,4 @@ int buildFiles(char * fileName) {
 
 	return 1;	
 }
-
 
