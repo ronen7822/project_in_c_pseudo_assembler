@@ -3,9 +3,10 @@
 #include <limits.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
+
 #include "def.h"
 
-#define NUM_CMD 16 /* number of commands */
 #define MAX_ARG_LEN 4 /* maximum length of command */
 #define NUM_ADD_MTH 4 /* number of addressing methods */
 #define A_Z 26

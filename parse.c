@@ -1,12 +1,21 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "parse.h"
 #include "def.h"
 
 #define MAX_GUIDE_LEN 6 /* maximum length of guidance ("string" is the longest) */
 #define MIN(a,b) (a < b) ? (a) : (b)
+#define MAX_INT 2097152 /* 2^21 */
+#define MIN_INT -2097152 /* -2^21 */
+#define MAX_CHAR 126 /* MAX, MIN are range of visible characters */
+#define MIN_CHAR 32
+#define isVaidChar(c) ((c < MAX_CHAR) && (c > MIN_CHAR))
+
+static int addArg(char* cmd, char *argv[MAX_OP_NUM], int i, int argStart, int argc);
+static void flushArgv(char *argv[MAX_OP_NUM]);
 
 /* getLabel - extract a label from a line
  * INPUT: a line
@@ -127,91 +136,121 @@ int getAddMthd(char* op) {
 }
 
 
-
-/* getStirng - extracts the numbers into array of chars inside dataContent
+/* getNumbers - extracts the numbers into array of chars inside dataContent
  * INPUT: a line and dataContent union
  * OUTPUT: integer. -1 in case of an eror, 0 otherwise
  */
-int getNumbers(char* line, dataContent* array){
+dataNode *getNumbers(char* line) {
 
-	char *token;
-	char *endChar = NULL; 
-	int tempNum, i = 0;
+	dataNode *node;
+	long int tempNum; /* long for big numbers */
+	int i = 0, errorFlag = 0;
+	char *ptr;
+	node->length = 1;
+	node->next = NULL;
 
-	while( line[i] == ' ' || line[i] == '\t' ) /* skips white spaces */
-		i++;
+	for (ptr = line; ptr != '\0'; ptr++)
+		node->length += (*ptr == ',');
 
-	if( line[i] == ",")
-	{
-		printf("Error in line %d: Data guidance parameter is incorrect, aborting storage action\n", lineNumber);
-		return -1; /* eror code */
-	}
+	node->data.intPtr = calloc(node->length, sizeof(int));
 
-	token = strtok(line,","); /* brakes the string to tokens of possible integers */
-	while(token)
-	{	
-		tempNum = (int) strtol(token, &endChar, 10); /* 10 for decimal base */
+	ptr = line;
+	while (i < node->length) {
 
-		if(*endChar != '\0') /* the token doesn't ends with a digit */
-		{
-			printf("Error in line %d: could not parse natural number in parameter %s\n", lineNumber, token);
-			return -1;
+		while (isspace(*(ptr++))); /* skip white spaces */
+
+		tempNum = 0;
+		while (isdigit(*ptr)) /* convert string to int */
+			tempNum = 10 * tempNum + (*(ptr++) - '0');
+
+		if ((tempNum > MAX_INT) || (tempNum < MIN_INT)) {
+			printf("error in %d: a number (%ld) does not fit the memory\n", lineNumber, tempNum);
+			errorFlag = 1;
 		}
 
-		if( tempNum >= pow(2, 23) || tempNum < pow(2, 23) ) /* the posible range for 2^24 bits in every word of memory */
-		{
-			printf("Error in line %d: natural number parameter %s is too large to fit in memory\n", lineNumber, token);
-			return -1;
+
+		node->data.intPtr[i++] = (int) tempNum;
+
+		if (!isdigit(*ptr) && !isspace(*ptr) && !(*ptr == ',')) {
+			printf("error in %d: invalid character\n", lineNumber);
+			errorFlag = 1;
+			while (!isspace(*ptr) && !(*(ptr++) == ',')); /* skip until next space or comma for prevent multiple errors*/
 		}
-		array.data[i] = tempNum; /* stores the number in the union */
-		token = strtok(NULL,",");
-		i++ ;
+
+		while (isspace(*ptr)) /* skip white spaces */
+			ptr++;
+
+		if ((i != node->length - 1) && (*(ptr++) != ',')) {
+			printf("error in %d: comma expected but not found\n", lineNumber);
+			errorFlag = 1;
+		}
 	}
 
-	array.data[i] = 16777216; /* 2^24 - sign to end of numbers . use other method to represnt the end of the array*/
-	return 0;
+	/* check if there are more arguments than commas */
+	while ((*ptr != '\0') && (*ptr != '\n') && (*ptr != EOF)) {
+		if (!isspace(*(ptr++))) {
+			printf("error in %d: arguments should be seperated by comma\n", lineNumber);
+			errorFlag = -1;
+		}
+	}
+
+	if (errorFlag) /* free memory allocation */
+		free(node->data.intPtr);
+
+
+	/* if node.data is NULL, an error detected. otherwise, succeed */
+	return node;
 }
-	
-/* getStirng - extracts string into array of chars inside dataContent
+
+/* getStirng - extracts string into array of chars inside dataNode
  * INPUT: a line and dataContent union
  * OUTPUT: integer. -1 in case of an eror, 0 otherwise
  */
-int getString(char* line, dataContent* array){
+dataNode *getString(char* line) {
 
-	int i=0;
-	
-	while( line[i] == ' ' || line[i] == '\t' ) /* skips white spaces */
-		i++;
+	dataNode *node;
+	int i = 0, errorFlag = 0;
+	char *strStart, *strEnd;
+	node->next = NULL;
 
-	if ( line[i] != '"') {
-		printf("Error in line %d: absence of \" sign in start of %s\n", lineNumber, line );
-		return -1; /* eror code */
+	/* case of no quotation mark in line at all */
+	if ((strStart = strchr(line, '\"')) == NULL) {
+		printf("error in %d: string should start with quotation mark", lineNumber);
+		errorFlag = 1;
 	}
-	
-	while( line[i] != '"' ) {
 
-		if ( !( line[i] >= 32 && line[i] < 126)){ /* checks wheter line[i] is invisible character  */
-			printf("Error in line %d: could not parse %c into visible character  \n", lineNumber,line[i]);
-			return -1;
-		}	
+	/* case of string no quotation mark in the end of the string */
+	if ((strEnd = strchr(++strStart, '\"')) == NULL) {
+		printf("error in %d: string should end with quotation marks", lineNumber);
+		errorFlag = 1;
+	}
 
-		if ( line[i] == '\0' ) {
-			printf("Error in line %d: absence of \" sign in end of %s\n", lineNumber, line );
-			return -1;
+	node->data.strPtr = calloc((strEnd - strStart + 1), sizeof(char)); /* stringPtr points to the first char in the string */
+
+
+	/* '\"' represent end of string */
+	while ((node->data.strPtr[i] = strStart[i]) != '\"') {
+		if (!isVaidChar(*strStart)) { /* invalid char in string */
+			printf("error in %d: invalid char in string", lineNumber);
+			errorFlag = 1;
 		}
-		array.string[i] = line[i]; /* stores the char in the union  */
 		i++;
 	}
-	
-	if ( line[i] != '\0' ) { /* extraneous text after '"' sign */
-		printf("Error in line %d: extraneous text after end of string %s\n", lineNumber, line );
-		return -1;
+	node->data.strPtr[i] = '\0';
+
+	/* check for no extraneous text end of the string */
+	while (++strEnd != '\0') {
+		if (!isspace(*strEnd)) { /* here, strEnd doesn't points to the string end, but to the rest chars in the line */
+			printf("error in %d: extraneous text after end of string", lineNumber);
+			errorFlag = 1;
+		}
 	}
 
-	array.string[i] = '\0'; 
-	return 0;
-}
+	if (errorFlag)
+		free(node->data.strPtr);
 
+	return node;
+}
 
 /* parseCmd - take command and extract the args
  * parseCmd check the command syntax (commas, no more than 4 args, no invalid chars, etc.)
@@ -296,11 +335,11 @@ int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
 			errorFlag = 1;
 		}
 	}
-	
+
 	if ( errorFlag )
 		return -1; /* error occurred */
 
-	return argc; 
+	return argc;
 }
 
 

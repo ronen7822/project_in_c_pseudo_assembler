@@ -1,53 +1,46 @@
-#include "def.h"
+#include <stdio.h>
+#include <string.h>
+#include "firstScan.h"
+#include "secondScan.h"
 
-int check_name ( char * );/* asserts the the file name ends with the suffix ".as" */
+int checkName (char *fileName);/* asserts the the file name ends with the suffix ".as" */
 
 int main( int argc, char *argv[] ) 
 {
     FILE *fp; /* pointer to the current file  */
-    int num_of_files = argc - 1;
-    int curr_file = 1; /* index to the current file */
+    int fileNum = 1; /* index to the current file */
  
-    if ( ! num_of_files ) { /* no files were given  */    
-        fprintf( stdout , "\nEROR - there are no given files in the command line\n",); 
-        return 0;
-    }
-   
-    do {
-	    
-        if (  ! check_name( argv[curr_file] ) ) /* asserts the the file name ends with ".as" */
-        {
-            fprintf( stdout, "EROR - the file %s does not ends with \".as \" \n", argv[curr_file]);
-            curr_file++ ;
-            continue ; /* continue to the next file */
-        }     
-        else if( !( fp = fopen( argv[curr_file], "r+") ) ) /* asserts that the file can be found and opended */
-        {
-            fprintf( stdout, "\nEROR - the file %s can not be found or open\n", argv[curr_file]);
-            curr_file++ ;
-            continue ; /* continue to the next file */
-        } 
+    if (argc == 1) /* no files were given  */
+        printf("warning: no files to assemble\n");
 
-        if ( ! first_scan(fp) ) 
-	     fprintf( stdout , "\nEROR - the file %s filed in the first scan\n", argv[curr_file]);
-	else if (! second_scan(fp) )
-	     fprintf( stdout , "\nEROR - the file %s filed in the seocnd scan\n", argv[curr_file]);
-	else /* no errors in the scaning */
-             fprintf( stdout , "\n - the file %s was assembeld sucssesfuly\n", argv[curr_file]);		
- 
-        fclose(fp); /* closing the file */
-        curr_file++ ;
+    for (fileNum = 1; fileNum < argc; fileNum++) {
+    	/* check file name - need to have the correct suffix */
+    	if (!checkName(argv[fileNum])) {
+    		printf("error in file %s: invalid file name\n", argv[fileNum]);
+    		continue;
+    	}
+
+    	/* open file, print error if fails */
+    	if ((fp = fopen(argv[fileNum], "r")) == NULL) {
+    		printf("error in file %s: cannot open file\n", argv[fileNum]);
+    		continue;
+    	}
+
+    	if ((firstScan(fp) < 0) || (secondScan(fp) < 0))
+    		printf("%s: failed to assemble\n", argv[fileNum]);
+    	else
+    		printf("%s: assenble finished successfully\n", argv[fileNum]);
+    	fclose(fp);
     }
-    while ( curr_file <= argc ) ; /* there is assembly files to read from */
-   
-    return 1;
+
+    return 0; /* program finished voluntrily */
 }
 
-int check_name ( char * file_name) {
-    int suffix_index = strlen( file_name ) - 4 ;
-    const char * suffix = file_name + suffix_index ;
+int checkName (char *fileName) {
+    int suffixIndex = strlen( fileName ) - 4 ;
+    const char * suffix = fileName + suffixIndex ;
 
-    if ( ! strcmp( suffix, ".as") )
-        return 1 ;
+    if (!strcmp(suffix, ".as"))
+        return 1;
     return 0;
 }

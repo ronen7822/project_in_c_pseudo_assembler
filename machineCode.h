@@ -1,6 +1,7 @@
-#include "symbolTable.c"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "def.h"
-
 
 typedef struct cmdHeader {
 	unsigned int opCode: 6; /* insturction opCode */
@@ -27,12 +28,6 @@ typedef union { /* instruction line */
 	cmdHeader head;
 	data value;
 } line;
-
-typedef struct {
-	line codeLine;
-	int IC;
-	int L;
-} linePlus;
 
 line instIamge[MAX_PROGRAM_SIZE]; /* MAX_PROGRAM_SIZE is set to be MAX_PROGRAM_SIZE */
 /* line dataImage[MAX_PROGRAM_SIZE]; */

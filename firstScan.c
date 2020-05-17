@@ -1,31 +1,26 @@
 #include "def.h"
-#include "legalTable.c"
-#include "parse.c"
-#include "symbolTable.c"
-/* #include "machineCode.c" */
+#include "legalTable.h"
+#include "parse.h"
+#include "symbolTable.h"
+#include "machineCode.h"
 
 #include <string.h>
-
-
-int calcWordNum(int op1, int op2);
+#include <stdlib.h>
 
 /* the first scan in the dual scan algorithm, no header file for now, could be added in the future */
-int first_scan(FILE *fp)
-{
+int firstScan(FILE *fp) {
 	char *currLine = calloc(MAX_LN_LEN, sizeof(char)); /* the current line text */
 	char *labelName = calloc(MAX_LN_LEN, sizeof(char)); /* holds the label, if exist. can hold a full line - for error detection */
 	char* argv[MAX_OP_NUM]; /* holds arguments for command statements */
 
-	int op1Add, op2Add, argc, wordNum;
+	int op1Add, op2Add, argc, opfunct;
 	int errorFlag = 0, symbolFlag; /* flags indicate on errors, symbol in line */
-	int contInd; /* index of the start of the statement after the label */
 
 	enum guideType guideType; /* used to hold type of guidance for guidance statement */
 
-	union dataContent { /* holds data for data image */
-		int data[(MAX_LN_LEN - strlen(".data ")) / 2 + 1]; /* maximum numbers in one line */
-		char string[MAX_LN_LEN - strlen(".string ") - 2]; /* longest string */
-	} dataContent;
+	/* initialize data image */
+	dataImage = (dataNode) { .length = 0, .data.intPtr = NULL, .next = NULL};
+	dataNode* dataImagePtr = &dataImage;
 
 	extern int DCF; /* data counter final */
 	extern int ICF; /* instruction counter final */
@@ -82,10 +77,14 @@ int first_scan(FILE *fp)
 
 			/* stages 5-7 */
 			if (guideType == DATA) {
-				/* parse and add data */
+				dataImagePtr->next = getNumbers(currLine + strlen(".data ")*sizeof(char));
+				dataImagePtr = dataImagePtr->next;
+				DC += dataImagePtr->length;
 			}
 			else if (guideType == STR) {
-				/* parse and add string */
+				dataImagePtr->next = getString(currLine + strlen(".string ")*sizeof(char));
+				dataImagePtr = dataImagePtr->next;
+				DC += dataImagePtr->length;
 			}
 
 			continue; /* in stages 7,10 we back to level 2 */
@@ -100,15 +99,10 @@ int first_scan(FILE *fp)
 		op2Add = getAddMthd(argv[2]);
 
 		/* check command validity: command exist and operands are in right adreesing method */
-		if (isCmdValid(argv[0], op1Add, op2Add) < 0) /* להדפיס שגיאה גם עבור האופרנד השני */
+		if ((opfunct = isCmdValid(argv[0], op1Add, op2Add)) < 0)  /* להדפיס שגיאה גם עבור האופרנד השני */
 			errorFlag = -1; /* error code */
-
-		wordNum = calcWordNum(op1Add, op2Add);
-
-		/* build binary code */
-
-		/* precede IC */
-		IC += wordNum;
+		else
+			IC += buildBinaryCode(opfunct, argv[1], argv[2], op1Add, op2Add); /* build instruction image and precede IC */
 	}
 
 	/* errorFlag is set to 1 if an error detected in the scan, stage 17 */
@@ -122,4 +116,7 @@ int first_scan(FILE *fp)
 
 	return 0; /* success code */
 }
+
+
+
 

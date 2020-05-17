@@ -10,12 +10,10 @@ int getGuideType(char* line);
 
 int getAddMthd(char* op);
 
-int getNumbers(char* line, dataContent array);
+dataNode *getNumbers(char* line);
 
-int getString(char* line, dataContent array);
+dataNode *getString(char* line);
 
-int parseCommand(char *argv[MAX_OP_NUM], char *cmd)
+int parseCommand(char *argv[MAX_OP_NUM], char *cmd);
 
-static int addArg(char* cmd, char *argv[MAX_OP_NUM ], int i, int argStart, int argc);
-  
-static void flushArgv(char *argv[MAX_OP_NUM]);
+

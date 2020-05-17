@@ -1,0 +1,1 @@
+int firstScan(FILE *fp);

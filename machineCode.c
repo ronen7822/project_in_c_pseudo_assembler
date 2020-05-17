@@ -1,5 +1,6 @@
 #include "machineCode.h"
 
+static int codeArg(char *arg, int AddMethod, int offset);
 
 /* codeInstruction - codes an instruction into the instrcution image
  * INPUT: instrcution opfunct (contains the opcode and funct of the commands), args and their addressing methods
@@ -24,7 +25,7 @@ int buildBinaryCode(int opfunct, char* srcOper, char* destOper, int sourceAdd, i
 	numOfWords += codeArg(srcOper, sourceAdd, 1);
 	numOfWords += codeArg(destOper, destAdd, 2);
 
-	return numOfWords; /* everything went fine */
+	return numOfWords; /* number of words added to code image */
 }
 
 static int codeArg(char *arg, int AddMethod, int offset) {
@@ -41,15 +42,17 @@ static int codeArg(char *arg, int AddMethod, int offset) {
 		instIamge[IC + offset].value.E = 0;
 		break;
 	case DIR:
-		instIamge[IC + offset].value.labelName = arg;
 		instIamge[IC + offset].value.data = 0;
+		instIamge[IC + offset].value.labelName = calloc(strlen(arg)+1, sizeof(char));
+		strcpy(instIamge[IC + offset].value.labelName, arg);
 		instIamge[IC + offset].value.A = 0;
 		instIamge[IC + offset].value.R = 1;
 		instIamge[IC + offset].value.E = 0;
 		break;
 	case REL:
-		instIamge[IC + offset].value.labelName = arg;
 		instIamge[IC + offset].value.A = 1;
+		instIamge[IC + offset].value.labelName = calloc(strlen(arg)+1, sizeof(char));
+		strcpy(instIamge[IC + offset].value.labelName, arg);
 		instIamge[IC + offset].value.R = 0;
 		instIamge[IC + offset].value.E = 0;
 		instIamge[IC + offset].value.data = 0;
