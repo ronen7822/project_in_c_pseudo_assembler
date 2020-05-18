@@ -7,6 +7,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+int ICF;
+int DCF;
+
 /* the first scan in the dual scan algorithm, no header file for now, could be added in the future */
 int firstScan(FILE *fp) {
 	char *currLine = calloc(MAX_LN_LEN, sizeof(char)); /* the current line text */
@@ -19,17 +22,16 @@ int firstScan(FILE *fp) {
 	enum guideType guideType; /* used to hold type of guidance for guidance statement */
 
 	/* initialize data image */
-	dataImage = (dataNode) { .length = 0, .data.intPtr = NULL, .next = NULL};
+	dataNode dataImage = (dataNode) { .length = 0, .data.intPtr = NULL, .next = NULL};
 	dataNode* dataImagePtr = &dataImage;
-
-	extern int DCF; /* data counter final */
-	extern int ICF; /* instruction counter final */
 
 	rewind (fp); /* sets the pointer to the begining of the file*/
 
-	/* reset IC, DC. TODO: why do they external? */
-	DC = 0;
-	IC = MMRY_OFFSET;
+	/* reset IC, DC. : why do they external? */
+	int IC = 0;
+	int DC = MMRY_OFFSET;
+	int lineNumber = 0;
+
 
 	while (fgets(currLine, MAX_LN_LEN + 1, fp)) { /* stages 2-16 */
 		symbolFlag = 0; /* reset symbolFlag */
@@ -108,7 +110,7 @@ int firstScan(FILE *fp) {
 	/* errorFlag is set to 1 if an error detected in the scan, stage 17 */
 	if (errorFlag < 0)
 		return -1; /* indicates that eror was found*/
-
+	
 	DCF = DC; /* stage 18 */
 	ICF = IC;
 

@@ -16,6 +16,7 @@
 
 static int addArg(char* cmd, char *argv[MAX_OP_NUM], int i, int argStart, int argc);
 static void flushArgv(char *argv[MAX_OP_NUM]);
+int lineNumber;
 
 /* getLabel - extract a label from a line
  * INPUT: a line

@@ -1,6 +1,7 @@
 #include "machineCode.h"
 
 static int codeArg(char *arg, int AddMethod, int offset);
+int IC;
 
 /* codeInstruction - codes an instruction into the instrcution image
  * INPUT: instrcution opfunct (contains the opcode and funct of the commands), args and their addressing methods
