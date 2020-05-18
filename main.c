@@ -29,7 +29,7 @@ int main( int argc, char *argv[] )
     	if ((firstScan(fp) < 0) || (secondScan(fp) < 0))
     		printf("%s: failed to assemble\n", argv[fileNum]);
     	else
-    		printf("%s: assenble finished successfully\n", argv[fileNum]);
+    		printf("%s: assemble finished successfully\n", argv[fileNum]);
     	fclose(fp);
     }
 
