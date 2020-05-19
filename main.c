@@ -4,7 +4,7 @@
 #include "secondScan.h"
 
 int checkName (char *fileName);/* asserts the the file name ends with the suffix ".as" */
-
+ 
 int main( int argc, char *argv[] ) 
 {
     FILE *fp; /* pointer to the current file  */

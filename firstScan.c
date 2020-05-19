@@ -3,7 +3,7 @@
 #include "parse.h"
 #include "symbolTable.h"
 #include "machineCode.h"
-
+ 
 #include <string.h>
 #include <stdlib.h>
 
@@ -16,22 +16,25 @@ int firstScan(FILE *fp) {
 	char *labelName = calloc(MAX_LN_LEN, sizeof(char)); /* holds the label, if exist. can hold a full line - for error detection */
 	char* argv[MAX_OP_NUM]; /* holds arguments for command statements */
 
-	int op1Add, op2Add, argc, opfunct;
+	int op1Add, op2Add, opfunct;
 	int errorFlag = 0, symbolFlag; /* flags indicate on errors, symbol in line */
 
 	enum guideType guideType; /* used to hold type of guidance for guidance statement */
-
-	/* initialize data image */
-	dataNode dataImage = (dataNode) { .length = 0, .data.intPtr = NULL, .next = NULL};
-	dataNode* dataImagePtr = &dataImage;
-
-	rewind (fp); /* sets the pointer to the begining of the file*/
 
 	/* reset IC, DC. : why do they external? */
 	int IC = 0;
 	int DC = MMRY_OFFSET;
 	int lineNumber = 0;
 
+	/* initialize data image */
+	dataNode dataImage ;
+	dataNode* dataImagePtr = &dataImage;
+	dataImagePtr->length = 0 ;
+	dataImagePtr->data.intPtr = NULL ;
+	dataImagePtr->next = NULL ;
+ 
+
+	rewind (fp); /* sets the pointer to the begining of the file*/
 
 	while (fgets(currLine, MAX_LN_LEN + 1, fp)) { /* stages 2-16 */
 		symbolFlag = 0; /* reset symbolFlag */
@@ -96,7 +99,7 @@ int firstScan(FILE *fp) {
 		if (symbolFlag)
 			addSymbol(labelName, CODE);
 
-		argc = parseCommand(argv, currLine);
+		/* argc = parseCommand(argv, currLine); argc is set but not used - warning */
 		op1Add = getAddMthd(argv[1]);
 		op2Add = getAddMthd(argv[2]);
 

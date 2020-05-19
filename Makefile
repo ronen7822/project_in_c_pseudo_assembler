@@ -1,5 +1,5 @@
-FLAGS_G = -g -ansi -Wall -pedantic
-FLAGS_C = -c -ansi -Wall -pedantic
+FLAGS_G = -g -ansi -Wall -pedantic 
+FLAGS_C = -c -ansi -Wall -pedantic 
 ALL_OFILES = main.o firstScan.o secondScan.o parse.o machineCode.o legalTable.o symbolTable.o
 
 all: main
@@ -8,7 +8,7 @@ symbolTable.o: symbolTable.c def.h
 	gcc $(FLAGS_C) symbolTable.c -o symbolTable.o
 
 legalTable.o: legalTable.c def.h
-	 gcc $(FLAGS_C) -lm legalTable.c -o legalTable.o
+	 gcc $(FLAGS_C)  legalTable.c  -o legalTable.o -lm
 
 machineCode.o: machineCode.c machineCode.h def.h
 	gcc $(FLAGS_C) machineCode.c -o machineCode.o
@@ -26,7 +26,7 @@ main.o: firstScan.c firstScan.h secondScan.c secondScan.h
 	gcc $(FLAGS_C) main.c -o main.o
 	
 main: $(ALL_OFILES)
-	gcc $(FLAG_G) $(ALL_OFILES) -o main
+	gcc $(FLAG_G) $(ALL_OFILES) -lm -o main
 
 clean:
 	rm *.o main

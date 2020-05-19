@@ -143,7 +143,7 @@ int getAddMthd(char* op) {
  */
 dataNode *getNumbers(char* line) {
 
-	dataNode *node;
+	dataNode *node = NULL;
 	long int tempNum; /* long for big numbers */
 	int i = 0, errorFlag = 0;
 	char *ptr;
@@ -198,7 +198,7 @@ dataNode *getNumbers(char* line) {
 	if (errorFlag) /* free memory allocation */
 		free(node->data.intPtr);
 
-
+ 
 	/* if node.data is NULL, an error detected. otherwise, succeed */
 	return node;
 }
@@ -209,7 +209,7 @@ dataNode *getNumbers(char* line) {
  */
 dataNode *getString(char* line) {
 
-	dataNode *node;
+	dataNode *node =NULL;
 	int i = 0, errorFlag = 0;
 	char *strStart, *strEnd;
 	node->next = NULL;
