@@ -16,4 +16,4 @@ dataNode *getString(char* line);
 
 int parseCommand(char *argv[MAX_OP_NUM], char *cmd);
 
-
+void printArgv(char *argv[MAX_OP_NUM]);

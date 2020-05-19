@@ -10,7 +10,7 @@ int IC;
  */
 int buildBinaryCode(int opfunct, char* srcOper, char* destOper, int sourceAdd, int destAdd) {
 
-	int numOfWords = 0;
+	int numOfWords = 1;
 
 	/*coding the first word the instrcution it self */
 	instIamge[IC].head.opCode = (unsigned int) (opfunct / NUM_CMD); /* gets all the necessary data for the coding */

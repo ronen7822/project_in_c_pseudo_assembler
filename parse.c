@@ -25,7 +25,7 @@ int lineNumber;
  */
 char *getLabel(char *line) {
 	char *label = calloc(MAX_LN_LEN + 1, sizeof(char));
-	char *startLabel, *endLabel;
+	char *startLabel = line, *endLabel;
 
 	if ((endLabel = strchr(line, ':')) == NULL) /* no label in line */
 		return NULL;
@@ -198,7 +198,7 @@ dataNode *getNumbers(char* line) {
 	if (errorFlag) /* free memory allocation */
 		free(node->data.intPtr);
 
- 
+
 	/* if node.data is NULL, an error detected. otherwise, succeed */
 	return node;
 }
@@ -268,7 +268,6 @@ int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
 	flushArgv(argv); /* flush (reset, clean) argv before another use */
 
 	for (i = 0, argStart = 0; cmd[i] || (argc == MAX_OP_NUM ) ; ++i) {
-
 		/* CASE: white space. DO: enter word into argv[argc++] */
 		if (cmd[i] == ' ' || cmd[i] == '\t' || cmd[i] == '\n' || cmd[i] == EOF) {
 			if (iw == INWORD) {
@@ -285,7 +284,7 @@ int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
 		/* CASE: no white space or EOL and argc = 3: extraneous text after end of command */
 		else if (argc >= MAX_OP_NUM ) {
 			printf("error in %d: extraneous text after end of command\n", lineNumber);
-			errorFlag = 1;
+			return -1; /* there is no need to continue */
 		}
 
 		/* CASE: comma. DO: same as white space but check for no double commas */
@@ -296,51 +295,40 @@ int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
 					errorFlag = 1; /* error code. error message printed in addArg */
 				if (argc == MAX_OP_NUM ){
 					printf("error in %d: extraneous text after end of command\n", lineNumber);
-					errorFlag = 1;
+					errorFlag = -1;
 				}
 				ic = argc > 1 ? NEED_COMMA : FORBID_COMMA;
 				iw = OUTWORD;
 			}
 
 			if (ic == FORBID_COMMA){ /* error: case of wrong comma */
-				printf("error in %d: illegal comma\n", lineNumber);
-				errorFlag = 1;
+				printf("error in %d: illegal comma before first operand\n", lineNumber);
+				ic = WAS_COMMA;
+				errorFlag = -1;
 			}
 			else if (ic == WAS_COMMA){ /* error: case of double commas */
 				printf("error in %d: multiple consecutive commas\n", lineNumber);
-				errorFlag = 1;
+				errorFlag = -1;
 			}
 			else if (ic == NEED_COMMA)
 				ic = WAS_COMMA;
 
 		}
 
-		/* CASE: name of command, variable or a number */
-		else if ( isalnum(cmd[i]) || cmd[i] == '+' || cmd[i] == '-') {
-
+		/* CASE: part of operand */
+		else {
 			if (ic == NEED_COMMA) {
-				printf("error in %d: missing comma\n", lineNumber);
-				errorFlag = 1; /* error code */
+				printf("error in %d: missing comma between operands\n", lineNumber);
+				errorFlag = -1; /* error code */
 			}
-
-
 			if (iw == OUTWORD) {
 				iw = INWORD;
 				argStart = i; /* the first char of the next arg */
 			}
 		}
-
-		/* CASE: incalid character*/
-		else {
-			printf("error in %d: at %d: invalid character %c (ascii = %d)\n", lineNumber, i + 1, cmd[i], cmd[i]);
-			errorFlag = 1;
-		}
 	}
 
-	if ( errorFlag )
-		return -1; /* error occurred */
-
-	return argc;
+	return errorFlag;
 }
 
 
@@ -351,8 +339,8 @@ int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
  */
 static int addArg(char* cmd, char *argv[MAX_OP_NUM ], int i, int argStart, int argc) {
 
-	if (i - argStart > MAX_LBL_SZ)
-		printf("error in %d: arg %d is too long, maximum length is %d\n",lineNumber, argc, MAX_LBL_SZ);
+	if (i - argStart > MAX_LN_LEN)
+		printf("error in %d: arg %d is too long, maximum length is %d\n",lineNumber, argc, MAX_LN_LEN);
 	else {
 		strncpy(argv[argc], &cmd[argStart], i - argStart);
 		argv[argc++][i - argStart] = '\0';
@@ -371,3 +359,13 @@ static void flushArgv(char *argv[MAX_OP_NUM]) {
 	for (i = 0; i < MAX_OP_NUM; i++)
 		*argv[i] = '\0';
 }
+
+void printArgv(char *argv[MAX_OP_NUM]) {
+	int i = 0;
+	while (i < MAX_OP_NUM)
+		printf("%s, ", argv[i++]);
+
+	putchar('\n');
+}
+
+

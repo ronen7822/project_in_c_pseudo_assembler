@@ -32,7 +32,7 @@ typedef struct dataNode{
 	dataPtr data;
 } dataNode;
 
-extern int lineNumber; 
+extern int lineNumber;
 extern int instImg[MAX_PROGRAM_SIZE];
 extern dataNode dataImage;
 
@@ -43,8 +43,7 @@ extern int DC ; /* data counter  */
 /* extern int ICF;  instruction counter final  casues linakge problem fix this later on */
 
 enum guideType {NO_GUIDE, DATA, STR, ENTRY, EXTERN, CODE};/*enum for label types*/
-enum instAddressType {NON = -1, IMM = 0, DIR = 1, REL = 2, REG = 3 }; /*enum for operand types*/
+enum instAddressType {NON = -1, IMM = 1, DIR = 2, REL = 4, REG = 8 }; /*enum for operand types*/
 enum codingType { ABS = 0, RELOC = 1, EXT = 2 }; /*enum for coding types*/
 
 #endif
-

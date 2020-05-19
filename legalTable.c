@@ -66,22 +66,16 @@ int initLegalTable() {
 
 		/* calculate valid addressing methods. in file it is stored as series of numbers (e.g. 013)
 		 * the i-th bit in legalTable.firstOpAdd indicate the validity of this addressing method
-		 * the char '*' means that this has no addressing mode */
-		if (tempOP1[0] == '*')
-			legalTable[i].firstOpAdd = 0;
-		else {
+		 * the char '*' means that this has no addressing mode (should be NON) */
+		legalTable[i].firstOpAdd = 0;
+		if (!(tempOP1[0] == '*'))
 			for (j = 0; tempOP1[j]; j++)
-				legalTable[i].firstOpAdd += (tempOP1[j] - '0')*pow(2,j);
-		}
+				legalTable[i].firstOpAdd += (1 << (tempOP1[j] - '0'));
 
 		/* same of second operand */
-		if (tempOP2[0] == '*')
-			legalTable[i].secOpAdd = 0;
-		else {
+		if (!(tempOP2[0] == '*'))
 			for (j = 0; tempOP2[j]; j++)
-				legalTable[i].secOpAdd += (tempOP2[j] - '0')*pow(2,j);
-		}
-
+				legalTable[i].secOpAdd += (1 << (tempOP2[j] - '0'));
 	}
 	return 0; /* success */
 }
@@ -91,31 +85,43 @@ int initLegalTable() {
  * OUTPUT: opCode if valid, -1 if invalid
  */
 int isCmdValid(char *cmd, int addOP1, int addOP2) {
-	int i = 0;
+	int i = 0, errorFlag = 0;
 
 	/* check that command is valid */
-	while ((hashCmdName(cmd) != legalTable[i].hashName) && (i++ < NUM_CMD))
+	while ((hashCmdName(cmd) != legalTable[i].hashName) && (++i < NUM_CMD))
 		; /* look for command with same hash value */
 
 	/* no command with same hash value found */
 	if (i == NUM_CMD) {
-		printf("error in %s: invalid command", cmd);
+		printf("error in %d: %s: invalid command\n", lineNumber ,cmd);
 		return -1;  /* invalid command, cannot continue */
 	}
 
+	/* case of first operand missing (only second operand is found */
+	if ((addOP1 == NON) && (addOP2 != NON)) {
+		printf("error in %d: %s: first operand is missing\n", lineNumber ,cmd);
+		errorFlag = -1;
+	}
+
+	/* check that there is proper number of operands */
+	if (((addOP1 != NON) && !(legalTable[i].firstOpAdd)) || ((addOP2 != NON) && !(legalTable[i].secOpAdd))) {
+		printf("error in %d: %s: too much operands\n", lineNumber ,cmd);
+		return -1; /* to much operands, no need to continue */
+	}
+
 	/* check that first operand is in valid addressing method */
-	if (addOP1 & legalTable[i].firstOpAdd) {
-		printf("error in %s: invalid addressing method for operand 1\n", cmd);
-		return -1; /* invalid command */
+	if ((addOP1 != NON) && !(addOP1 & legalTable[i].firstOpAdd)) {
+		printf("error in %d: %s: invalid addressing method for first operand\n", lineNumber ,cmd);
+		errorFlag = -1; /* invalid addressing method, invalid command */
 	}
 
 	/* check that second operand is in valid addressing method */
-	if (addOP2 & legalTable[i].secOpAdd) {
-		printf("error in %s: invalid addressing method for operand 2\n", cmd);
-		return -1; /* invalid command */
+	if ((addOP2 != NON) && !(addOP2 & legalTable[i].secOpAdd)) {
+		printf("error in %d: %s: invalid addressing method for second operand\n", lineNumber ,cmd);
+		errorFlag = -1; /* invalid addressing method, invalid command */
 	}
 
 	/* return combination of opCode and funct, the caller function can calculate these values
 	 * the combination proves that each return value is unique */
-	return legalTable[i].opCode * NUM_CMD + legalTable[i].funct;
+	return (errorFlag == 0) ? legalTable[i].opCode * NUM_CMD + legalTable[i].funct : errorFlag;
 }

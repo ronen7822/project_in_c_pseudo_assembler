@@ -3,7 +3,7 @@
 #include "parse.h"
 #include "symbolTable.h"
 #include "machineCode.h"
- 
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -16,14 +16,14 @@ int firstScan(FILE *fp) {
 	char *labelName = calloc(MAX_LN_LEN, sizeof(char)); /* holds the label, if exist. can hold a full line - for error detection */
 	char* argv[MAX_OP_NUM]; /* holds arguments for command statements */
 
-	int op1Add, op2Add, opfunct;
+	int op1Add, op2Add, opfunct, i;
 	int errorFlag = 0, symbolFlag; /* flags indicate on errors, symbol in line */
 
 	enum guideType guideType; /* used to hold type of guidance for guidance statement */
 
-	/* reset IC, DC. : why do they external? */
-	int IC = 0;
-	int DC = MMRY_OFFSET;
+	/* reset IC, DC. : why do they external? לעבור על זה לפני הגשה */
+	int IC = MMRY_OFFSET;
+	int DC = 0;
 	int lineNumber = 0;
 
 	/* initialize data image */
@@ -32,10 +32,14 @@ int firstScan(FILE *fp) {
 	dataImagePtr->length = 0 ;
 	dataImagePtr->data.intPtr = NULL ;
 	dataImagePtr->next = NULL ;
- 
+
+	/* memory allocation for argv */
+	for (i = 0; i < MAX_OP_NUM; i++)
+		argv[i] = (char*) calloc(MAX_LN_LEN, sizeof(char));
 
 	rewind (fp); /* sets the pointer to the begining of the file*/
 
+	printf("strating first scan...\n");
 	while (fgets(currLine, MAX_LN_LEN + 1, fp)) { /* stages 2-16 */
 		symbolFlag = 0; /* reset symbolFlag */
 		++lineNumber;
@@ -50,7 +54,6 @@ int firstScan(FILE *fp) {
 				errorFlag = -1;
 			symbolFlag = 1;
 		}
-
 
 		/* set line pointer to be right after the label (the label is irrelevant for the rest of the line) */
 		currLine = ((labelName != NULL) ? strchr(currLine, ':') + sizeof(char) : currLine);
@@ -95,11 +98,17 @@ int firstScan(FILE *fp) {
 			continue; /* in stages 7,10 we back to level 2 */
 		}
 
+		printf("%s\n", labelName); /* כנראה יש תקלה שגורמת ל-segmentation fault בפונקציה addSymbol! */
+
 		/* stage 11 */
 		if (symbolFlag)
 			addSymbol(labelName, CODE);
 
-		/* argc = parseCommand(argv, currLine); argc is set but not used - warning */
+		if (parseCommand(argv, currLine) < 0) {
+			errorFlag = -1; /* errors are printed in the function */
+			continue;
+		}
+
 		op1Add = getAddMthd(argv[1]);
 		op2Add = getAddMthd(argv[2]);
 
@@ -110,18 +119,18 @@ int firstScan(FILE *fp) {
 			IC += buildBinaryCode(opfunct, argv[1], argv[2], op1Add, op2Add); /* build instruction image and precede IC */
 	}
 
+
+	printf("%d\n", IC);
+
 	/* errorFlag is set to 1 if an error detected in the scan, stage 17 */
 	if (errorFlag < 0)
 		return -1; /* indicates that eror was found*/
-	
+
+
 	DCF = DC; /* stage 18 */
 	ICF = IC;
 
 	updateDataLabels(ICF); /* adds ICF value to all the lablels in the symbol list - stage 19 */
-
+	printf("i'm here\n");
 	return 0; /* success code */
 }
-
-
-
-
