@@ -51,7 +51,7 @@ int parseLineToNum( line ln ) {
 }
 
 
-/* parse instruction line to integer */
+/* prints the instruction image in exadecimal format */
 int pirntLine(line * instIamge, int instImageLength) {
 	int i;	
 	
