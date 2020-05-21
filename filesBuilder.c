@@ -1,6 +1,10 @@
 #include "def.h"
 #include "symbolTable.c"
 
+int parseLineToNum( line ln ) ;
+int parseDataLineToNum( line ln );
+
+
 /* builds the output files */
 int buildFiles(char * fileName) {
 	
