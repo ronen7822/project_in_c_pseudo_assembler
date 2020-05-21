@@ -1,6 +1,10 @@
 #include "def.h"
 #include "symbolTable.c"
 
+/*sould be written in symbolTable.c */
+symbolNode * findEntryLabel(symbolNode *ptr);
+symbolNode * findExternalLabel(symbolNode *ptr);
+/*  */
 int parseLineToNum( line ln ) ;
 int parseDataLineToNum( line ln );
 
@@ -8,8 +12,8 @@ int parseDataLineToNum( line ln );
 /* builds the output files */
 int buildFiles(char * fileName) {
 	
-	FILE * fpOb, fpEnt, fpExt; /* pointers to the object, entry and extrernal files  */
-	char * objectName, entryName, externNAame ; /* the name of the  creared files */
+	FILE * fpOb, * fpEnt,* fpExt; /* pointers to the object, entry and extrernal files  */
+	char * objectName, * entryName,  * externName ; /* the name of the  creared files */
 	symbolNode *ptr = head; /* pointer to the symbol table */
 	int i;
 	
@@ -27,7 +31,7 @@ int buildFiles(char * fileName) {
 			fprintf(fpOb, "%06d %06x\n" , i+MMRY_OFFSET  , parseLineToNum (instIamge[i]))  ;
 		
 		for (i=0 ; i < IDF ; i++ )  /* prints the data image */
-			fprintf(fpOb, "%06d %06x\n" , i+ICF ,parseDataLineToNum (dataImage[i])) ;
+			fprintf(fpOb, "%06d %06x\n" , i+ICF , parseDataLineToNum (dataImag[i])) ;
 		
 		fclose(fpOb);
 	}
@@ -40,31 +44,32 @@ int buildFiles(char * fileName) {
 	strcpy(entryName, fileName);
    	strcat(entryName, ASM_ENTRIES_SUFF);
 
-	if ( findEntryLabel() >= 0 && (fpEnt = fopen(entryName, "w+")) ) {
-
-		while( ptr = findEntryLabel(ptr) )   /* search for entry symbols */
+	if ( findEntryLabel(ptr)  && (fpEnt = fopen(entryName, "w+")) ) {
+		
+		ptr = head; /* the head of the symbolList */
+		while( (ptr = findEntryLabel(ptr)) )   /* search for entry symbols */
 			fprintf(fpEnt, "%s %06d\n" ,  ptr->data.name, ptr->data.value ) ;/* prints entry symbols */
 		
 		fclose(fpEnt);
 	}
-	else if ( findEntryLabel() >= 0 )
+	else if ( ! findEntryLabel(ptr)  )
 		fprintf( stdout, "\nEROR - could not write the entry file of %s \n", fileName);
 
 	
 
-	externName = (char *)malloc(strlen(fileName) + 3); /* creates the extern file name*/
+	externName = (char *)malloc( strlen(fileName) + 3); /* creates the extern file name*/
 	strcpy(externName, fileName);
    	strcat(externName, ASM_EXTERNALS_SUFF);
 
-	if ( findExternalLabel() >= 0 && (fpExt = fopen( externNAame, "w+")) ) {
+	if ( findExternalLabel(ptr)  && (fpExt = fopen( externName, "w+")) ) {
 
 		ptr = head; /* the head of the symbolList */
-		while( ptr = findExternalLabel(ptr) )   /* search for enxternal symbols */
+		while( (ptr = findExternalLabel(ptr)) )   /* search for enxternal symbols */
 			fprintf(fpExt,"%s %06d \n" , ptr->data.name, ptr->data.value) ; /* prints enxternal symbols */
 		
 		fclose(fpExt);
 	}
-	else if ( findExternalLabel() >= 0 )
+	else if ( ! findExternalLabel(ptr)  )
 		fprintf( stdout, "\nEROR - could not write the entry file of %s \n", fileName);
 
 
