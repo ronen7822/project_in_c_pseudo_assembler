@@ -20,12 +20,10 @@ int buildFiles(char * fileName) {
 		fprintf(fpOb, "%d %d\n" , ICF-MMRY_OFFSET, IDF); /* the lenght of the instruction image and the data image  */
 
 		for (i=0 ; i < ICF-MMRY_OFFSET ; i++ )  /* prints the instructiom image */
-			fprintf(fpOb, "%06d %06x\n" , i+MMRY_OFFSET  , instIamge[i]) ;
+			fprintf(fpOb, "%06d %06x\n" , i+MMRY_OFFSET  , parseLineToNum (instIamge[i]))  ;
 		
 		for (i=0 ; i < IDF ; i++ )  /* prints the data image */
-			fprintf(fpOb, "%06d %06x\n" , i+ICF, dataImage[i]) ;
-		
-		fclose(fpOb) ;
+			fprintf(fpOb, "%06d %06x\n" , i+ICF ,parseDataLineToNum (dataImage[i])) ;
 	}
 	else	
 		fprintf( stdout, "\nEROR - could not write the object file of %s \n", fileName);
@@ -36,14 +34,12 @@ int buildFiles(char * fileName) {
 	strcpy(entryName, fileName);
    	strcat(entryName, ASM_ENTRIES_SUFF);
 
-	if ( findEntryLabel(head) >= 0 && (fpEnt = fopen(entryName, "w+")) ) {
-		ptr = head;
+	if ( findEntryLabel() >= 0 && (fpEnt = fopen(entryName, "w+")) ) {
+
 		while( ptr = findEntryLabel(ptr) )   /* search for entry symbols */
 			fprintf(fpEnt, "%s %06d\n" ,  ptr->data.name, ptr->data.value ) ;/* prints entry symbols */
-		
-		fclose(fpEnt) ;
 	}
-	else if ( findEntryLabel(head) >= 0 )
+	else if ( findEntryLabel() >= 0 )
 		fprintf( stdout, "\nEROR - could not write the entry file of %s \n", fileName);
 
 	
@@ -52,14 +48,13 @@ int buildFiles(char * fileName) {
 	strcpy(externName, fileName);
    	strcat(externName, ASM_EXTERNALS_SUFF);
 
-	if ( findExternalLabel(head) >= 0 && (fpExt = fopen( externNAame, "w+")) ) {
+	if ( findExternalLabel() >= 0 && (fpExt = fopen( externNAame, "w+")) ) {
+
 		ptr = head; /* the head of the symbolList */
 		while( ptr = findExternalLabel(ptr) )   /* search for enxternal symbols */
 			fprintf(fpExt,"%s %06d \n" , ptr->data.name, ptr->data.value) ;/* prints enxternal symbols */
-		
-		fclose(fpExt) ;
 	}
-	else if ( findExternalLabel(head) >= 0 )
+	else if ( findExternalLabel() >= 0 )
 		fprintf( stdout, "\nEROR - could not write the entry file of %s \n", fileName);
 
 
@@ -71,3 +66,33 @@ int buildFiles(char * fileName) {
 	return 1;	
 }
 
+/* parse line to integer */
+int parseLineToNum( line ln ) {
+
+	int num = 0;
+
+	num += ln.head.E ;
+	num += ln.head.R<<1 ;
+	num += ln.head.A<<2 ;
+	num += ln.head.funct<<3 ;
+	num += ln.head.destReg<<8 ;
+	num += ln.head.destAdress<<11 ;
+	num += ln.head.srcReg<<13 ;
+	num += ln.head.srcAdress<<16;
+	num += ln.head.opCode<<18;
+
+	return num;
+}
+
+/* parse data line to integer */
+int parseDataLineToNum( line ln ) {
+
+    int num = 0;
+    /* shift bits is equal to multipling by pow(2,i) */
+    num += ln.value.E ;
+    num += ln.value.R<<1 ;
+    num += ln.value.A<<2 ;
+    num += ln.value.data<<3 ;
+
+    return num;
+}
