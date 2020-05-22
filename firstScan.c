@@ -123,7 +123,6 @@ int firstScan(FILE *fp) {
 		else
 			IC += buildBinaryCode(opfunct, argv[1], argv[2], op1Add, op2Add, IC); /* build instruction image and precede IC */
 
-		printf("first scan IC = %d", IC);
 	}
 
 

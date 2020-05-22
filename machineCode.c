@@ -23,10 +23,9 @@ int buildBinaryCode(int opfunct, char* srcOper, char* destOper, int sourceAdd, i
 	instIamge[IC].conent.head.R = 0; /* in the first word of every instruction R = 0 */
 	instIamge[IC].conent.head.lineNumber = lineNumber;
 	instIamge[IC].type = HEADER_LINE;
-	printf("IC=%d, type is header\n", IC);
 
 	numOfWords += codeArg(srcOper, sourceAdd, IC + 1); /* word next to IC */
-	numOfWords += codeArg(destOper, destAdd, IC + 2); /* word next to word next to IC */
+	numOfWords += codeArg(destOper, destAdd, IC + 1 + (numOfWords == 2)); /* word next to word next to IC */
 
 	return numOfWords; /* number of words added to code image */
 }
@@ -63,17 +62,14 @@ static int codeArg(char *arg, int AddMethod, int IC) {
 	}
 
 	instIamge[IC].type = DATA_LINE;
-	printf("line: %d, IC = %d, symbol: %s\n", lineNumber, IC, instIamge[IC].conent.value.labelName);
 	return 1; /* i.e. a word of data was added */
 }
 
 int getLineType(int IC) {
-	printf("IC: %d, type: %d\n", IC, instIamge[IC].type);
 	return instIamge[IC].type;
 }
 
 char *getSymbol(int IC) {
-	printf("labl in machine code: %s\n", instIamge[IC].conent.value.labelName);
 	return instIamge[IC].conent.value.labelName;
 }
 

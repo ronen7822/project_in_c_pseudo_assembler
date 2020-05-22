@@ -19,13 +19,11 @@ int secondScan(FILE *fp) {
 	/* check if need to add a symbol. if not, skip */
 	for (IC = 0; IC <= ICF; IC++) {
 		if (getLineType(IC) == HEADER_LINE) {
-			printf("IC = %d\n", IC);
 			lastCommandIC = IC;
 			lineNumber = getLineNumber(IC);
 		}
 		else {
 			if ((symbol = getSymbol(IC)) != NULL) { /* check if this line contains a symbol */
-				printf("IC = %d, symbol: %s\n", IC, symbol);
 				if ((symbolValue = getValueFromSymbol(symbol)) > 0) /* get symbol from symbol table. ERROR if no such symbol */
 					setSymbolValue(IC, lastCommandIC ,symbolValue); /* update value */
 				else {
