@@ -40,7 +40,7 @@ char *getLabel(char *line) {
 
 char *getAnotherLabel(char *line) {
 	char *label = calloc(MAX_LN_LEN + 1, sizeof(char));
-	char *startLabel, *endLabel;
+	char *startLabel = line, *endLabel;
 
 	while ((*startLabel == ' ') || (*startLabel == '\t'))
 		++startLabel;
@@ -95,21 +95,22 @@ int getGuideType(char* linePtr) {
 		return NO_GUIDE; /* no guidance is this line */
 
 	/* calculate length of guidance statement */
-	while (!isspace(linePtr + length))
+	while (!isspace(*(linePtr + length)))
 		length += sizeof(char);
 
 	strncpy(guide, linePtr, MIN(length, MAX_GUIDE_LEN));
+	guide[MIN(length, MAX_GUIDE_LEN)] = '\0';
 
-	if (strcmp(guide, "data"))
+	if (!strcmp(guide, "data"))
 		return DATA;
-	else if (strcmp(guide, "string"))
+	else if (!strcmp(guide, "string"))
 		return STR;
-	else if (strcmp(guide, "entry"))
+	else if (!strcmp(guide, "entry"))
 		return ENTRY;
-	else if (strcmp(guide, "extern"))
+	else if (!strcmp(guide, "extern"))
 		return EXTERN;
 
-	printf("error in %d: guid name is not valid", lineNumber);
+	printf("error in %d: %s: guide name is not valid\n", lineNumber, guide);
 	return -1; /* error code */
 }
 
@@ -143,61 +144,82 @@ int getAddMthd(char* op) {
  */
 dataNode *getNumbers(char* line) {
 
-	dataNode *node = NULL;
+	dataNode *node = (dataNode*) malloc(sizeof(dataNode));
 	long int tempNum; /* long for big numbers */
-	int i = 0, errorFlag = 0;
+	int i = 0, errorFlag = 0, sign = 1;
+	enum isComma {NEED_COMMA, WAS_COMMA} ic = WAS_COMMA; /* enforce right use in commas */
 	char *ptr;
 	node->length = 1;
 	node->next = NULL;
 
-	for (ptr = line; ptr != '\0'; ptr++)
+	for (ptr = line; *ptr != '\0'; ptr++)
 		node->length += (*ptr == ',');
 
 	node->data.intPtr = calloc(node->length, sizeof(int));
-
 	ptr = line;
+
 	while (i < node->length) {
 
-		while (isspace(*(ptr++))); /* skip white spaces */
+		while (isspace(*ptr)) /* skip white spaces */
+			ptr++;
+		if (ic == NEED_COMMA) {
+			if (*ptr == ',') {
+				ic = WAS_COMMA;
+				ptr++;
+			}
+			else {
+				printf("error in %d: comma expected but not found\n", lineNumber);
+				errorFlag = ERROR_CODE;
+			}
 
-		tempNum = 0;
-		while (isdigit(*ptr)) /* convert string to int */
-			tempNum = 10 * tempNum + (*(ptr++) - '0');
-
-		if ((tempNum > MAX_INT) || (tempNum < MIN_INT)) {
-			printf("error in %d: a number (%ld) does not fit the memory\n", lineNumber, tempNum);
-			errorFlag = 1;
-		}
-
-
-		node->data.intPtr[i++] = (int) tempNum;
-
-		if (!isdigit(*ptr) && !isspace(*ptr) && !(*ptr == ',')) {
-			printf("error in %d: invalid character\n", lineNumber);
-			errorFlag = 1;
-			while (!isspace(*ptr) && !(*(ptr++) == ',')); /* skip until next space or comma for prevent multiple errors*/
 		}
 
 		while (isspace(*ptr)) /* skip white spaces */
 			ptr++;
 
-		if ((i != node->length - 1) && (*(ptr++) != ',')) {
-			printf("error in %d: comma expected but not found\n", lineNumber);
-			errorFlag = 1;
+		tempNum = 0, sign = 1; /* reset these variables to get the next number */
+
+		if (*(ptr) == '-') { /* case of negetive number */
+			sign = -1;
+			ptr++;
+		}
+
+		while (isdigit(*ptr)) { /* convert string of number to int */
+			tempNum = 10 * tempNum + (*(ptr++) - '0');
+			ic = NEED_COMMA; /* ready for another comma */
+		}
+
+		if ((tempNum > MAX_INT) || (tempNum < MIN_INT)) {
+			printf("error in %d: a number does not fit the memory, should be from %d to %d\n", lineNumber, MIN_INT, MAX_INT);
+			errorFlag = ERROR_CODE;
+		}
+
+		node->data.intPtr[i++] = (int) tempNum * sign;
+
+		/* case of non-digit character in the "number" */
+		if (!isdigit(*ptr) && !isspace(*ptr) && !(*ptr == ',')) {
+			printf("error in %d: invalid character (%c) in number - not a digit\n", lineNumber, *ptr);
+			errorFlag = ERROR_CODE;
+			ic = NEED_COMMA; /* ready for another comma */
+			while (!isspace(*ptr) && !(*(ptr) == ',')) /* skip until next space or comma for prevent multiple errors*/
+				ptr++;
 		}
 	}
 
 	/* check if there are more arguments than commas */
 	while ((*ptr != '\0') && (*ptr != '\n') && (*ptr != EOF)) {
 		if (!isspace(*(ptr++))) {
-			printf("error in %d: arguments should be seperated by comma\n", lineNumber);
-			errorFlag = -1;
+			printf("error in %d: comma expected but not found\n", lineNumber);
+			errorFlag = ERROR_CODE;
+			break;
 		}
 	}
 
-	if (errorFlag) /* free memory allocation */
+	if (errorFlag == ERROR_CODE) {/* free memory allocation */
 		free(node->data.intPtr);
-
+		free(node);
+		return NULL;
+	}
 
 	/* if node.data is NULL, an error detected. otherwise, succeed */
 	return node;
@@ -209,46 +231,60 @@ dataNode *getNumbers(char* line) {
  */
 dataNode *getString(char* line) {
 
-	dataNode *node =NULL;
+	dataNode *node = (dataNode*) malloc(sizeof(dataNode));
 	int i = 0, errorFlag = 0;
-	char *strStart, *strEnd;
+	char *strStart = line, *strEnd = line + strlen(line); /* start points to the first on line, end points to its end */
 	node->next = NULL;
 
+	while (isspace(*strStart)) /* skip white spaces */
+		strStart++;
+
 	/* case of no quotation mark in line at all */
-	if ((strStart = strchr(line, '\"')) == NULL) {
-		printf("error in %d: string should start with quotation mark", lineNumber);
+	if (*strStart != '\"') {
+		printf("error in %d: string should start with quotation mark\n", lineNumber);
 		errorFlag = 1;
 	}
+
+	while (isspace(*(--strEnd))); /* skip white spaces */
 
 	/* case of string no quotation mark in the end of the string */
-	if ((strEnd = strchr(++strStart, '\"')) == NULL) {
-		printf("error in %d: string should end with quotation marks", lineNumber);
+	if (*strEnd != '\"') {
+		printf("error in %d: string should end with quotation marks\n", lineNumber);
 		errorFlag = 1;
 	}
 
-	node->data.strPtr = calloc((strEnd - strStart + 1), sizeof(char)); /* stringPtr points to the first char in the string */
+	if (!errorFlag) { /* if errorFlag was set, there is no need to parse the string */
+		node->data.strPtr = calloc((strEnd - strStart + 1), sizeof(char)); /* stringPtr points to the first char in the string */
 
+		/* copy the string from the line to the node */
+		while (strStart + ++i != strEnd) {
 
-	/* '\"' represent end of string */
-	while ((node->data.strPtr[i] = strStart[i]) != '\"') {
-		if (!isVaidChar(*strStart)) { /* invalid char in string */
-			printf("error in %d: invalid char in string", lineNumber);
-			errorFlag = 1;
+			node->data.strPtr[i - 1] = strStart[i];
+			if (!isVaidChar(*strStart)) { /* invalid char in string */
+				printf("error in %d: invalid char in string\n", lineNumber);
+				errorFlag = 1;
+			}
 		}
-		i++;
-	}
-	node->data.strPtr[i] = '\0';
+		node->data.strPtr[i - 1] = '\0'; /* end of string */
+		node->length = strlen(node->data.strPtr) + 1;
 
-	/* check for no extraneous text end of the string */
-	while (++strEnd != '\0') {
-		if (!isspace(*strEnd)) { /* here, strEnd doesn't points to the string end, but to the rest chars in the line */
-			printf("error in %d: extraneous text after end of string", lineNumber);
-			errorFlag = 1;
+		/* check for no extraneous text end of the string */
+		while (*(++strEnd) != '\0') {
+			if (!isspace(*strEnd)) { /* here, strEnd doesn't points to the string end, but to the rest chars in the line */
+				printf("error in %d: extraneous text after end of string\n", lineNumber);
+				errorFlag = 1;
+				break; /* there is no reason to print multiple errors of that */
+			}
 		}
+
+		if (errorFlag) /* free allocation of the string */
+			free(node->data.strPtr);
 	}
 
-	if (errorFlag)
-		free(node->data.strPtr);
+	if (errorFlag) {/* free allocation of the node */
+		free(node);
+		return NULL;
+	}
 
 	return node;
 }

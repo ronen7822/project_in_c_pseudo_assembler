@@ -97,12 +97,6 @@ int isCmdValid(char *cmd, int addOP1, int addOP2) {
 		return -1;  /* invalid command, cannot continue */
 	}
 
-	/* case of first operand missing (only second operand is found */
-	if ((addOP1 == NON) && (addOP2 != NON)) {
-		printf("error in %d: %s: first operand is missing\n", lineNumber ,cmd);
-		errorFlag = -1;
-	}
-
 	/* check that there is proper number of operands */
 	if (((addOP1 != NON) && !(legalTable[i].firstOpAdd)) || ((addOP2 != NON) && !(legalTable[i].secOpAdd))) {
 		printf("error in %d: %s: too much operands\n", lineNumber ,cmd);

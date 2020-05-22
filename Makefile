@@ -1,5 +1,6 @@
-FLAGS_G = -g -ansi -Wall -pedantic 
-FLAGS_C = -c -ansi -Wall -pedantic 
+FLAGS_G = -g -ansi -Wall -pedantic
+FLAGS_C = -c -ansi -Wall -pedantic
+ALL_ASSIST_FILES = parse.c parse.h machineCode.c machineCode.h legalTable.c legalTable.h symbolTable.c symbolTable.h def.h
 ALL_OFILES = main.o firstScan.o secondScan.o parse.o machineCode.o legalTable.o symbolTable.o
 
 all: main
@@ -16,10 +17,10 @@ machineCode.o: machineCode.c machineCode.h def.h
 parse.o: parse.c parse.h def.h
 	gcc $(FLAGS_C) parse.c -o parse.o
 	
-firstScan.o: parse.c parse.h machineCode.c machineCode.h legalTable.c legalTable.h symbolTable.c symbolTable.h def.h firstScan.c
+firstScan.o: $(ALL_ASSIST_FILES) firstScan.c firstScan.h
 	gcc $(FLAGS_C) firstScan.c -o firstScan.o
 	
-secondScan.o: parse.c parse.h machineCode.c machineCode.h legalTable.c legalTable.h symbolTable.c symbolTable.h def.h secondScan.c
+secondScan.o: $(ALL_ASSIST_FILES) secondScan.c secondScan.h
 	gcc $(FLAGS_C) secondScan.c -o secondScan.o
 	
 main.o: firstScan.c firstScan.h secondScan.c secondScan.h main.c
