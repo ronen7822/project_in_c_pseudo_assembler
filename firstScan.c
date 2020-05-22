@@ -14,8 +14,8 @@ static void replaceArgs(char *arg1, char *arg2);
 
 /* the first scan in the dual scan algorithm, no header file for now, could be added in the future */
 int firstScan(FILE *fp) {
-	char *currLine = calloc(MAX_LN_LEN, sizeof(char)); /* the current line text */
-	char *labelName = calloc(MAX_LN_LEN, sizeof(char)); /* holds the label, if exist. can hold a full line - for error detection */
+	char *currLine = calloc(MAX_LN_LEN + 2, sizeof(char)); /* the current line text */
+	char *labelName = calloc(MAX_LN_LEN + 1, sizeof(char)); /* holds the label, if exist. can hold a full line - for error detection */
 	char* argv[MAX_OP_NUM]; /* holds arguments for command statements */
 
 	int op1Add, op2Add, opfunct, i;
@@ -23,8 +23,8 @@ int firstScan(FILE *fp) {
 
 	enum guideType guideType; /* used to hold type of guidance for guidance statement */
 
-	/* reset IC, DC. : why do they external? לעבור על זה לפני הגשה */
-	int IC = MMRY_OFFSET;
+	/* reset IC, DC */
+	int IC = 0;
 	int DC = 0;
 
 	/* initialize data image */
@@ -36,7 +36,7 @@ int firstScan(FILE *fp) {
 
 	/* memory allocation for argv */
 	for (i = 0; i < MAX_OP_NUM; i++)
-		argv[i] = (char*) calloc(MAX_LN_LEN, sizeof(char));
+		argv[i] = (char*) calloc(MAX_LN_LEN + 1, sizeof(char));
 
 	rewind (fp); /* sets the pointer to the begining of the file*/
 
@@ -80,7 +80,7 @@ int firstScan(FILE *fp) {
 			}
 
 			/* if there is a symbol add symbol to symbol table */
-			if ((symbolFlag) && (addSymbol(labelName, guideType) < 0))
+			if ((symbolFlag) && (addSymbol(labelName, guideType, IC, DC) < 0))
 				errorFlag = ERROR_CODE;
 
 			/* stages 5-7 */
@@ -106,7 +106,7 @@ int firstScan(FILE *fp) {
 
 		/* stage 11 */
 		if (symbolFlag)
-			addSymbol(labelName, CODE);
+			addSymbol(labelName, CODE, IC, DC);
 
 		if (parseCommand(argv, currLine) < 0) {
 			errorFlag = ERROR_CODE; /* errors are printed in the function */
@@ -118,10 +118,12 @@ int firstScan(FILE *fp) {
 		op2Add = getAddMthd(argv[2]);
 
 		/* check command validity: command exist and operands are in right adreesing method */
-		if ((opfunct = isCmdValid(argv[0], op1Add, op2Add)) < 0)  /* להדפיס שגיאה גם עבור האופרנד השני */
+		if ((opfunct = isCmdValid(argv[0], op1Add, op2Add)) < 0)
 			errorFlag = ERROR_CODE; /* error code */
 		else
-			IC += buildBinaryCode(opfunct, argv[1], argv[2], op1Add, op2Add); /* build instruction image and precede IC */
+			IC += buildBinaryCode(opfunct, argv[1], argv[2], op1Add, op2Add, IC); /* build instruction image and precede IC */
+
+		printf("first scan IC = %d", IC);
 	}
 
 
@@ -129,13 +131,13 @@ int firstScan(FILE *fp) {
 
 	/* errorFlag is set to 1 if an error detected in the scan, stage 17 */
 	if (errorFlag == ERROR_CODE)
-		return ERROR_CODE; /* indicates that eror was found*/
+		return ERROR_CODE; /* indicates that error was found*/
 
 
 	DCF = DC; /* stage 18 */
 	ICF = IC;
 
-	updateDataLabels(ICF); /* adds ICF value to all the lablels in the symbol list - stage 19 */
+	updateDataLabels(ICF + MMRY_OFFSET); /* adds ICF value to all the lablels in the symbol list - stage 19 */
 	return 0; /* success code */
 }
 

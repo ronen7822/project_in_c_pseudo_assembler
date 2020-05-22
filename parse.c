@@ -130,7 +130,7 @@ int getAddMthd(char* op) {
 	else if (op[0] == '&')
 		return REL;
 
-	else if ((op[0] = 'r') && (op[1] >= '0') && (op[1] <= '7') && (strlen(op) == 2))
+	else if ((op[0] == 'r') && (op[1] >= '0') && (op[1] <= '7') && (strlen(op) == 2))
 		return REG;
 
 	/* there is no specific character for DIR. if the label is not valid, error will be detected in second scan */
@@ -368,10 +368,9 @@ int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
 }
 
 
-/* addArg - subfunction of parseCmd. Called to add argument into argv
- * if failed, return -1 if fail (too long arg), update arg count (argc) if succeed
+/* addArg - subfunction of parseCommand. Called to add argument into argv
  * INPUT: a command, indexes of the arg (argStart -> i), argv, argc
- * OUTPUT: argc value (-1 if fail)
+ * OUTPUT: argc value
  */
 static int addArg(char* cmd, char *argv[MAX_OP_NUM ], int i, int argStart, int argc) {
 
@@ -387,7 +386,7 @@ static int addArg(char* cmd, char *argv[MAX_OP_NUM ], int i, int argStart, int a
 
 /* flushArgv - flush argv for another use
  * INPUT: argv
- * OUTPUT: clean argv (all elements are empty strings
+ * OUTPUT: clean argv (all elements are empty strings)
  */
 static void flushArgv(char *argv[MAX_OP_NUM]) {
 
