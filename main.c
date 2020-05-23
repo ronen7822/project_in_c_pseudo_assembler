@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     		continue;
     	}
 
-    	if ((firstScan(fp) < 0) || (secondScan(fp) < 0))
+    	if ((firstScan(fp) < 0) || (secondScan(fp, argv[fileNum]) < 0))
     		printf("%s: failed to assemble\n", argv[fileNum]);
     	else
     		printf("%s: assemble finished successfully\n", argv[fileNum]);

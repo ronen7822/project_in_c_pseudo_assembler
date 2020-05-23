@@ -1,6 +1,8 @@
+#include "def.h"
 
 #define TRUE 1
 #define FALSE 0
+
 int DC;
 
 /*label data type. includes vars for label name, label type, if label is used as entry, address in memory,pointer to operandNode list which contains all operands' IC values that are using this label (in use only for external labels)*/
@@ -18,6 +20,9 @@ typedef struct symbolNode {
 	struct symbolNode *next;
 } symbolNode;
 
+extern symbolNode *head;
+
+
 
 int addSymbol(char *label, int guide, int IC, int DC);
 
@@ -32,3 +37,7 @@ int getValueFromSymbol(char *label);
 int makeEntry(char *label);
 
 symbol *symbolInTable(char *label);
+
+symbolNode * findEntryLabel(symbolNode *ptr);
+
+symbolNode * findExternalLabel(symbolNode *ptr);

@@ -3,7 +3,6 @@
 
 static int codeArg(char *arg, int AddMethod, int IC);
 
-
 /* changing the instAddressType to 0,1,2,3  instead of 1,2,4,8 will destroy the gentle logic of the the legalTable you have built - yair */
 int calculAddress(int AddressType){
 
@@ -149,7 +148,6 @@ int bitTobit (int val) {
 	}
 }
 
-
 /* parse line to integer */	
  int parseLineToNum( line ln ) {
 
@@ -178,8 +176,6 @@ int bitTobit (int val) {
 	return bitTobit (num);
 } 
 
-
-
 /*parse dataNode which is string or integers into machine code */
 int parseData (dataPtr ptr, int type, int offSet, int length) {
 
@@ -196,7 +192,6 @@ int parseData (dataPtr ptr, int type, int offSet, int length) {
 	}
 	return length;
 }
-
 
 int printImage( int ICF, dataNode dataImage) {
 

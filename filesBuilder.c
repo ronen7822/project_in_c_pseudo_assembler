@@ -1,21 +1,22 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "def.h"
-#include "symbolTable.c"
+#include "symbolTable.h"
+#include "machineCode.h"
 
-/*sould be written in symbolTable.c */
-symbolNode * findEntryLabel(symbolNode *ptr);
-symbolNode * findExternalLabel(symbolNode *ptr);
-/*  */
-int parseLineToNum( line ln ) ;
-int parseDataLineToNum( line ln );
-
+/* the static function */
+static int parseLineToNum( line ln ) ;
+static int bitTobit (int val);
+static int parseData (dataPtr ptr, int type, int offSet, int length, FILE * fpOb) ;
+static int printImage( int ICF, dataNode dataImage, FILE * fpOb) ;
 
 /* builds the output files */
-int buildFiles(char * fileName) {
+int buildFiles(char * fileName, int ICF, dataNode dataImage) {
 	
 	FILE * fpOb, * fpEnt,* fpExt; /* pointers to the object, entry and extrernal files  */
 	char * objectName, * entryName,  * externName ; /* the name of the  creared files */
 	symbolNode *ptr = head; /* pointer to the symbol table */
-	int i;
 	
 
 	/* creates the object file name*/
@@ -23,31 +24,25 @@ int buildFiles(char * fileName) {
 	strcpy(objectName, fileName);
    	strcat(objectName, ASM_OBJECT_SUFF);
 
+	printf("strating to build the files...\n");
 	if(  (fpOb = fopen( objectName, "w+")) ) {  /* asserts that the file can be found and opended */
 
-		fprintf(fpOb, "%d %d\n" , ICF-MMRY_OFFSET, IDF); /* the lenght of the instruction image and the data image  */
-
-		for (i=0 ; i < ICF-MMRY_OFFSET ; i++ )  /* prints the instructiom image */
-			fprintf(fpOb, "%06d %06x\n" , i+MMRY_OFFSET  , parseLineToNum (instIamge[i]))  ;
-		
-		for (i=0 ; i < IDF ; i++ )  /* prints the data image */
-			fprintf(fpOb, "%06d %06x\n" , i+ICF , parseDataLineToNum (dataImag[i])) ;
-		
+		fprintf(fpOb, "%d %d\n" , ICF-MMRY_OFFSET, DCF); /* the lenght of the instruction image and the data image  */
+		printImage( ICF,  dataImage, fpOb ); /* prints the instruction and the data in the object file*/		
 		fclose(fpOb);
 	}
 	else	
 		fprintf( stdout, "\nEROR - could not write the object file of %s \n", fileName);
 
 
-
 	entryName = (char *) malloc(strlen(fileName) + 3); /* creates the entry file name*/
 	strcpy(entryName, fileName);
    	strcat(entryName, ASM_ENTRIES_SUFF);
 
-	if ( findEntryLabel(ptr)  && (fpEnt = fopen(entryName, "w+")) ) {
+	if ( findEntryLabel(ptr) && (fpEnt = fopen(entryName, "w+")) ) {
 		
 		ptr = head; /* the head of the symbolList */
-		while( (ptr = findEntryLabel(ptr)) )   /* search for entry symbols */
+		while( (ptr = findEntryLabel(ptr)) != NULL )   /* search for entry symbols */
 			fprintf(fpEnt, "%s %06d\n" ,  ptr->data.name, ptr->data.value ) ;/* prints entry symbols */
 		
 		fclose(fpEnt);
@@ -56,15 +51,14 @@ int buildFiles(char * fileName) {
 		fprintf( stdout, "\nEROR - could not write the entry file of %s \n", fileName);
 
 	
-
 	externName = (char *)malloc( strlen(fileName) + 3); /* creates the extern file name*/
 	strcpy(externName, fileName);
    	strcat(externName, ASM_EXTERNALS_SUFF);
+	ptr = head; /* the head of the symbolList */
 
 	if ( findExternalLabel(ptr)  && (fpExt = fopen( externName, "w+")) ) {
-
 		ptr = head; /* the head of the symbolList */
-		while( (ptr = findExternalLabel(ptr)) )   /* search for enxternal symbols */
+		while( (ptr = findExternalLabel(ptr)) != NULL )   /* search for enxternal symbols */
 			fprintf(fpExt,"%s %06d \n" , ptr->data.name, ptr->data.value) ; /* prints enxternal symbols */
 		
 		fclose(fpExt);
@@ -81,33 +75,89 @@ int buildFiles(char * fileName) {
 	return 1;	
 }
 
-/* parse line to integer */
-int parseLineToNum( line ln ) {
+
+
+
+/* transforms 32 number to his 24 bit equvelent */
+static int bitTobit (int val) {
+
+    	int max24 = 0x7FFFFF;  /* limit to 23 bits beacuse thers is the  leading sign bit  */
+	int mask = 0x00FFFFFF;
+
+    	if ( val >= 0 && val < max24 ) /* positive number smaller than 2^23   */
+       		return val;
+
+   	else if (val < 0 && val >= (-1*max24) )  /* the logic behind this is to trasfer the 8 leading bits to zero's */
+        	return (val&mask) ; 
+
+	else {
+		printf("warning in %d: the number :%d is cannot be written in 24 bits format\n", lineNumber, val);
+		return -1;
+	}
+}
+
+/* parse line to integer */	
+static int parseLineToNum( line ln ) {
 
 	int num = 0;
 
-	num += ln.head.E ;
-	num += ln.head.R<<1 ;
-	num += ln.head.A<<2 ;
-	num += ln.head.funct<<3 ;
-	num += ln.head.destReg<<8 ;
-	num += ln.head.destAdress<<11 ;
-	num += ln.head.srcReg<<13 ;
-	num += ln.head.srcAdress<<16;
-	num += ln.head.opCode<<18;
+	if ( ln.type == HEADER_LINE ) {
+		num += ln.conent.head.E ;
+		num += ln.conent.head.R<<1 ;
+		num += ln.conent.head.A<<2 ;
+		num += ln.conent.head.funct<<3 ;
+		num += ln.conent.head.destReg<<8 ;
+		num += ln.conent.head.destAdress<<11 ;
+		num += ln.conent.head.srcReg<<13 ;
+		num += ln.conent.head.srcAdress<<16;
+		num += ln.conent.head.opCode<<18;
+	}
 
-	return num;
+	else if (ln.type == DATA_LINE) { 
+		num += ln.conent.value.E ;
+    		num += ln.conent.value.R<<1 ;
+   		num += ln.conent.value.A<<2 ;
+   		num += ln.conent.value.data<<3 ;
+	}
+
+	/* transforms 32 number to his 24 bit equvelent */
+	return bitTobit (num);
+} 
+
+
+
+/*parse dataNode which is string or integers into machine code */
+static int parseData (dataPtr ptr, int type, int offSet, int length, FILE * fpOb) {
+
+	int  i; /* the length of the array */	
+	
+	if (type == DATA) { /* integers */		
+		for (i=0 ; i < length ; i++  ) 
+			fprintf (fpOb, "%06d %06x\n" , 100+offSet+i , bitTobit ( ptr.intPtr[i] ) ) ;
+	}
+	
+	else if (type == STR) { /* string  */		
+		for (i=0 ; i < length ; i++  ) 
+			fprintf (fpOb, "%06d %06x\n" , 100+offSet+i , ptr.strPtr[i] ) ;
+	}
+	return length;
 }
 
-/* parse data line to integer */
-int parseDataLineToNum( line ln ) {
 
-    int num = 0;
-    /* shift bits is equal to multipling by pow(2,i) */
-    num += ln.value.E ;
-    num += ln.value.R<<1 ;
-    num += ln.value.A<<2 ;
-    num += ln.value.data<<3 ;
+static int printImage( int ICF, dataNode dataImage , FILE * fpOb) {
 
-    return num;
+	int i ;
+	dataNode* dataImagePtr = &dataImage;
+	
+	for (i=0 ; i < ICF-100 ; i++ ) 
+		fprintf(fpOb, "%06d %06x\n" , i+100, parseLineToNum (instIamge[i]) ) ; 
+
+	while( dataImagePtr ) {
+		i += parseData (dataImagePtr->data, dataImagePtr->type , i ,dataImagePtr->length, fpOb  ) ;
+		dataImagePtr = dataImagePtr->next;
+	}
+	
+
+	return 1;
 }
+

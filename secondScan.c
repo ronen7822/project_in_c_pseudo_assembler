@@ -1,11 +1,11 @@
 #include <stdio.h>
 
-#include "def.h"
+#include "secondScan.h"
 #include "parse.h"
 #include "symbolTable.h"
 #include "machineCode.h"
 
-int secondScan(FILE *fp) {
+int secondScan(FILE *fp , char * fileName) {
 
 	int symbolValue, errorFlag = 0;
 	int IC, lastCommandIC = 0;
@@ -23,9 +23,6 @@ int secondScan(FILE *fp) {
 		if ( getGuideType(currLine) == ENTRY) {
 
 			currLine = ( (getGuideType(currLine) == ENTRY ) ? strchr(currLine, 'y') + sizeof(char) : currLine);
-
-			printf("entry line :%d\n", lineNumber ); /* 2 lines for testing */
-			printf("current line: %s \n", currLine );
 
 			if ( (entrySymbol = getAnotherLabel(currLine)) == NULL) {
 				printf("error in %d: entry command with no label\n", lineNumber );
@@ -57,7 +54,7 @@ int secondScan(FILE *fp) {
 					setSymbolValue(IC, lastCommandIC ,symbolValue); /* update value */
 
 				else if ( isSymbolExternal(symbol) > 0 )
-					setExternSymbol(IC) ; /* do nothing */
+					setExternSymbol(IC) ; /* need to build list of externals */
 				else {
 					printf("error in %d: symbol (%s) not found\n", lineNumber, symbol);
 					errorFlag = ERROR_CODE;
@@ -70,7 +67,7 @@ int secondScan(FILE *fp) {
 	if (errorFlag == ERROR_CODE)
 		return ERROR_CODE; /* indicates that error was found*/
 
-	printImage( ICF,  dataImage); /* printing test */
+	buildFiles(fileName , ICF, dataImage ) ;
 
 	return 0;
 }

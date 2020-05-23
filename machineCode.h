@@ -54,6 +54,5 @@ void setExternSymbol(int IC);
 
 int getLineNumber(int IC);
 
-int printImage( int ICF, dataNode dataImage) ;
 
 
