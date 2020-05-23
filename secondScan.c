@@ -67,7 +67,5 @@ int secondScan(FILE *fp , char * fileName) {
 	if (errorFlag == ERROR_CODE)
 		return ERROR_CODE; /* indicates that error was found*/
 
-	buildFiles(fileName , ICF, dataImage ) ;
-
-	return 0;
+	return buildFiles(fileName , ICF, dataImage ) ;
 }
