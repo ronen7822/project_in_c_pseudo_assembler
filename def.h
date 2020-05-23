@@ -12,7 +12,6 @@
 #define MAX_LBL_SZ 31  /*max char count for labe name*/
 #define MAX_OP_NUM 3 /* maximum args in one line (command name, 1st & 2nd operands */
 #define NUM_CMD 16 /* number of commands */
-
 #define ERROR_CODE -1
 
 typedef struct instInfo {

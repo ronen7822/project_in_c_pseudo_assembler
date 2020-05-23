@@ -15,5 +15,6 @@ int secondScan(FILE *fp , char * fileName);
 
 externNode * findExternalLabel(externNode *ptr);
 
+int freeExternList(void);
 
 extern externNode *headExt ;

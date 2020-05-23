@@ -40,4 +40,5 @@ symbol *symbolInTable(char *label);
 
 symbolNode * findEntryLabel(symbolNode *ptr);
 
- /* symbolNode * findExternalLabel(symbolNode *ptr); remove this  function - has no usage anymore */
+int freeList(void);
+

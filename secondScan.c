@@ -94,3 +94,19 @@ externNode * findExternalLabel(externNode *ptr) {
 	return ptr->next;
 }
 
+int freeExternList(void) {
+
+	externNode *ptr = headExt;
+	externNode *temp = headExt;
+	/* add the offset for all data symbols */
+	while (ptr != NULL) {
+
+		temp = ptr->next;
+		free(ptr);
+		ptr = temp;
+	}
+	
+	return 1;
+}
+
+

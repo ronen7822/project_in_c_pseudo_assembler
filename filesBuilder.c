@@ -11,6 +11,7 @@ static int parseLineToNum( line ln ) ;
 static int bitTobit (int val);
 static int parseData (dataPtr ptr, int type, int offSet, int length, FILE * fpOb) ;
 static int printImage( int ICF, dataNode dataImage, FILE * fpOb) ;
+int freeDataImage(void);
 
 /* builds the output files */
 int buildFiles(char * fileName, int ICF, dataNode dataImage) {
@@ -74,6 +75,9 @@ int buildFiles(char * fileName, int ICF, dataNode dataImage) {
 	free(objectName);
 	free(entryName);
 	free(externName);
+	freeList() ;
+	freeExternList() ;
+	freeDataImage();
 
 	return 1;	
 }
@@ -161,6 +165,18 @@ static int printImage( int ICF, dataNode dataImage , FILE * fpOb) {
 	}
 	
 
+	return 1;
+}
+
+int freeDataImage(void){
+	dataNode* dataImagePtr = &dataImage;
+	dataNode * temp =  &dataImage;
+	
+	while ( dataImagePtr != NULL ){ 
+		temp = dataImagePtr->next;
+		free(dataImagePtr);
+		dataImagePtr = temp;
+	}
 	return 1;
 }
 
