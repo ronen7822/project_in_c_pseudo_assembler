@@ -5,6 +5,8 @@
 #include "symbolTable.h"
 #include "machineCode.h"
 
+externNode *headExt = NULL;
+
 int secondScan(FILE *fp , char * fileName) {
 
 	int symbolValue, errorFlag = 0;
@@ -53,8 +55,10 @@ int secondScan(FILE *fp , char * fileName) {
 				if ( (symbolValue = getValueFromSymbol(symbol)) > 0) /* get symbol from symbol table if not external . ERROR if no such symbol */
 					setSymbolValue(IC, lastCommandIC ,symbolValue); /* update value */
 
-				else if ( isSymbolExternal(symbol) > 0 )
+				else if ( isSymbolExternal(symbol) > 0 ) {
 					setExternSymbol(IC) ; /* need to build list of externals */
+					addExternNode(IC, symbol);
+				}
 				else {
 					printf("error in %d: symbol (%s) not found\n", lineNumber, symbol);
 					errorFlag = ERROR_CODE;
@@ -67,5 +71,26 @@ int secondScan(FILE *fp , char * fileName) {
 	if (errorFlag == ERROR_CODE)
 		return ERROR_CODE; /* indicates that error was found*/
 
+
 	return buildFiles(fileName , ICF, dataImage ) ;
 }
+
+int addExternNode(int lineNum, char *symbol) {
+	
+	externNode *newNode = (externNode*) calloc(1, sizeof(externNode));
+
+	/* create new node */
+	newNode->lineVal = lineNum+MMRY_OFFSET;
+	strcpy((newNode->name), symbol);
+
+	newNode->next = headExt;
+	headExt = newNode; 
+
+	return 1;
+}
+
+/* return the next external node*/
+externNode * findExternalLabel(externNode *ptr) {
+	return ptr->next;
+}
+

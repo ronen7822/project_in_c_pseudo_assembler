@@ -4,6 +4,7 @@
 #include "def.h"
 #include "symbolTable.h"
 #include "machineCode.h"
+#include "secondScan.h"
 
 /* the static function */
 static int parseLineToNum( line ln ) ;
@@ -17,7 +18,8 @@ int buildFiles(char * fileName, int ICF, dataNode dataImage) {
 	FILE * fpOb, * fpEnt,* fpExt; /* pointers to the object, entry and extrernal files  */
 	char * objectName, * entryName,  * externName ; /* the name of the  creared files */
 	symbolNode *ptr = head; /* pointer to the symbol table */
-	
+	externNode *ptrExt = headExt;  /* pointer to the external list */
+
 
 	/* creates the object file name*/
 	objectName = (char *)malloc(strlen(fileName) + 3); /* 3 is the length of ".as" */
@@ -42,29 +44,30 @@ int buildFiles(char * fileName, int ICF, dataNode dataImage) {
 	if ( findEntryLabel(ptr) && (fpEnt = fopen(entryName, "w+")) ) {
 		
 		ptr = head; /* the head of the symbolList */
-		while( (ptr = findEntryLabel(ptr)) != NULL )   /* search for entry symbols */
+		while( (ptr = findEntryLabel(ptr))  )   /* search for entry symbols */
 			fprintf(fpEnt, "%s %06d\n" ,  ptr->data.name, ptr->data.value ) ;/* prints entry symbols */
 		
 		fclose(fpEnt);
 	}
 	else if ( ! findEntryLabel(ptr)  )
-		fprintf( stdout, "\nEROR - could not write the entry file of %s \n", fileName);
+		printf(  "\nEROR - could not write the entry file of %s \n", fileName);
 
 	
 	externName = (char *)malloc( strlen(fileName) + 3); /* creates the extern file name*/
 	strcpy(externName, fileName);
    	strcat(externName, ASM_EXTERNALS_SUFF);
-	ptr = head; /* the head of the symbolList */
+	ptrExt = headExt;
+	if ( findExternalLabel(ptrExt)  && (fpExt = fopen( externName, "w+")) ) {
 
-	if ( findExternalLabel(ptr)  && (fpExt = fopen( externName, "w+")) ) {
-		ptr = head; /* the head of the symbolList */
-		while( (ptr = findExternalLabel(ptr)) != NULL )   /* search for enxternal symbols */
-			fprintf(fpExt,"%s %06d \n" , ptr->data.name, ptr->data.value) ; /* prints enxternal symbols */
-		
+		ptrExt = headExt; /* the head of the symbolList */
+		do   /* search for enxternal symbols */
+			fprintf(fpExt, "%s %06d \n" , ptrExt->name, ptrExt->lineVal) ; /* prints enxternal symbols */
+		while ( (ptrExt = findExternalLabel(ptrExt)) ) ;
+
 		fclose(fpExt);
 	}
-	else if ( ! findExternalLabel(ptr)  )
-		fprintf( stdout, "\nEROR - could not write the entry file of %s \n", fileName);
+	else if ( ! findExternalLabel(ptrExt)  )
+		printf( "\nEROR - could not write the extern file of %s \n", fileName);
 
 
 	/* free all the malloc's */
@@ -157,6 +160,7 @@ static int printImage( int ICF, dataNode dataImage , FILE * fpOb) {
 		dataImagePtr = dataImagePtr->next;
 	}
 	
+
 	return 1;
 }
 
