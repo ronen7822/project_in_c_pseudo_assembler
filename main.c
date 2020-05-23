@@ -17,7 +17,8 @@ int main(int argc, char *argv[])
 
     for (fileNum = 1; fileNum < argc; fileNum++) {
     	/* open file, print error if fails */
-    	if ((fp = fopen(strcat(argv[fileNum], ".as"), "r")) == NULL) {
+	/* i'v changed temporary .as to .asb becuse the suffix .as causes the files in my ubuntu to go crazy */
+    	if ((fp = fopen(strcat(argv[fileNum], ".asb"), "r")) == NULL) {
     		printf("error in file %s: cannot open file\n", argv[fileNum]);
     		continue;
     	}

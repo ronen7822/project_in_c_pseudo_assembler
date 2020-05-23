@@ -31,6 +31,7 @@ typedef union {
 typedef struct dataNode{
 	struct dataNode *next;
 	int length;
+	int type;/* DATA OR STR*/
 	dataPtr data;
 } dataNode;
 
@@ -41,8 +42,8 @@ extern dataNode dataImage;
 extern int IC ;  /* instruction counter */
 extern int DC ; /* data counter  */
 
-/* extern int DCF;  data counter final - casues linakge problem fix this later on*/
-/* extern int ICF;  instruction counter final  casues linakge problem fix this later on */
+ extern int DCF; /* data counter final - casues linakge problem fix this later on*/
+ extern int ICF;  /* instruction counter final  casues linakge problem fix this later on */
 
 enum guideType {NO_GUIDE, DATA, STR, ENTRY, EXTERN, CODE};/*enum for label types*/
 enum instAddressType {NON = -1, IMM = 1, DIR = 2, REL = 4, REG = 8 }; /*enum for operand types*/

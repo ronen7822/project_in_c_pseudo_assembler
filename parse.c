@@ -151,9 +151,11 @@ dataNode *getNumbers(char* line) {
 	char *ptr;
 	node->length = 1;
 	node->next = NULL;
+	node->type = DATA;
 
 	for (ptr = line; *ptr != '\0'; ptr++)
 		node->length += (*ptr == ',');
+
 
 	node->data.intPtr = calloc(node->length, sizeof(int));
 	ptr = line;
@@ -235,6 +237,7 @@ dataNode *getString(char* line) {
 	int i = 0, errorFlag = 0;
 	char *strStart = line, *strEnd = line + strlen(line); /* start points to the first on line, end points to its end */
 	node->next = NULL;
+	node->type = STR;
 
 	while (isspace(*strStart)) /* skip white spaces */
 		strStart++;

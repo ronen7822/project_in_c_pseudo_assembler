@@ -10,6 +10,11 @@ int ICF;
 int DCF;
 int lineNumber = 0;
 
+/* initialize data image out of function because it is extern variable  */
+dataNode dataImage ;
+dataNode* dataImagePtr = &dataImage;
+
+
 static void replaceArgs(char *arg1, char *arg2);
 
 /* the first scan in the dual scan algorithm, no header file for now, could be added in the future */
@@ -18,7 +23,7 @@ int firstScan(FILE *fp) {
 	char *labelName = calloc(MAX_LN_LEN + 1, sizeof(char)); /* holds the label, if exist. can hold a full line - for error detection */
 	char* argv[MAX_OP_NUM]; /* holds arguments for command statements */
 
-	int op1Add, op2Add, opfunct, i;
+	int op1Add, op2Add, opfunct, i ;
 	int errorFlag = 0, symbolFlag; /* flags indicate on errors, symbol in line */
 
 	enum guideType guideType; /* used to hold type of guidance for guidance statement */
@@ -27,9 +32,6 @@ int firstScan(FILE *fp) {
 	int IC = 0;
 	int DC = 0;
 
-	/* initialize data image */
-	dataNode dataImage ;
-	dataNode* dataImagePtr = &dataImage;
 	dataImagePtr->length = 0 ;
 	dataImagePtr->data.intPtr = NULL ;
 	dataImagePtr->next = NULL ;
@@ -41,12 +43,21 @@ int firstScan(FILE *fp) {
 	rewind (fp); /* sets the pointer to the begining of the file*/
 
 	printf("strating first scan...\n");
-	while (fgets(currLine, MAX_LN_LEN + 1, fp)) { /* stages 2-16 */
+	i = 0;
+	LOOP: while (fgets(currLine, MAX_LN_LEN + 1, fp)) { /* stages 2-16 */
 		symbolFlag = 0; /* reset symbolFlag */
 		++lineNumber;
-		/* skip comments */
-		if (currLine[0] == ';')
+
+		/* skip comments and blank spaces*/
+		if (currLine[0] == ';' || currLine[0] == '\n' )
 			continue;
+		while (currLine[i] == ' ' || currLine[i] == '\t' ) {
+			if (currLine[i+1] == ';' || currLine[i+1] == '\n' ) /*according to the book we should avoid using goto, but it is convenient */
+				goto LOOP;
+			if (currLine[i+1] != ' ' && currLine[i+1] != '\t' )
+				break;
+			i++;
+		}
 
 		/* look for symbols - stages 3,4 */
 		if ((labelName = getLabel(currLine)) != NULL) {
@@ -80,7 +91,7 @@ int firstScan(FILE *fp) {
 			}
 
 			/* if there is a symbol add symbol to symbol table */
-			if ((symbolFlag) && (addSymbol(labelName, guideType, IC, DC) < 0))
+			if ((guideType != ENTRY) && (symbolFlag) && (addSymbol(labelName, guideType, IC, DC) < 0))
 				errorFlag = ERROR_CODE;
 
 			/* stages 5-7 */
@@ -134,9 +145,9 @@ int firstScan(FILE *fp) {
 
 
 	DCF = DC; /* stage 18 */
-	ICF = IC;
+	ICF = 100+IC;
 
-	updateDataLabels(ICF + MMRY_OFFSET); /* adds ICF value to all the lablels in the symbol list - stage 19 */
+	updateDataLabels(ICF); /* adds ICF value to all the lablels in the symbol list - stage 19 */
 	return 0; /* success code */
 }
 
@@ -146,3 +157,4 @@ static void replaceArgs(char *arg1, char *arg2) {
 		*arg1 = '\0'; /* remove arg1 by replacing its first char by 0 */
 	}
 }
+

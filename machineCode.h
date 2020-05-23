@@ -50,4 +50,10 @@ char *getSymbol(int IC);
 
 void setSymbolValue(int IC, int lastCommandIC, int symbolValue);
 
+void setExternSymbol(int IC);
+
 int getLineNumber(int IC);
+
+int printImage( int ICF, dataNode dataImage) ;
+
+
