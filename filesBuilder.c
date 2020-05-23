@@ -157,7 +157,6 @@ static int printImage( int ICF, dataNode dataImage , FILE * fpOb) {
 		dataImagePtr = dataImagePtr->next;
 	}
 	
-
 	return 1;
 }
 
