@@ -34,6 +34,10 @@ void updateDataLabels(int ICF);
 
 int getValueFromSymbol(char *label);
 
+int addEntryNode(char *label);
+
+int entrifyList();
+
 int makeEntry(char *label);
 
 symbol *symbolInTable(char *label);

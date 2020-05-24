@@ -87,6 +87,14 @@ int initLegalTable() {
 int isCmdValid(char *cmd, int addOP1, int addOP2) {
 	int i = 0, errorFlag = 0;
 
+	/* the function use bitwise operations to decide if the address method is valid. each method has an appropriate bit in the legal table, e.g. if the
+	 * valid methods are 0,1,3, it is stored in the legal table as 1101. for address method that different then NON, the function shift it left to be
+	 * in the corralate location */
+	if (addOP1 != NON)
+		addOP1 = 1 << addOP1;
+	if (addOP2 != NON)
+		addOP2 = 1 << addOP2;
+
 	/* check that command is valid */
 	while ((hashCmdName(cmd) != legalTable[i].hashName) && (++i < NUM_CMD))
 		; /* look for command with same hash value */

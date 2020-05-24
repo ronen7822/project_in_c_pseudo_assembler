@@ -12,7 +12,6 @@ int lineNumber = 0;
 
 /* initialize data image out of function because it is extern variable  */
 dataNode dataImage ;
-dataNode* dataImagePtr = &dataImage;
 
 
 static void replaceArgs(char *arg1, char *arg2);
@@ -23,7 +22,7 @@ int firstScan(FILE *fp) {
 	char *labelName = calloc(MAX_LN_LEN + 1, sizeof(char)); /* holds the label, if exist. can hold a full line - for error detection */
 	char* argv[MAX_OP_NUM]; /* holds arguments for command statements */
 
-	int op1Add, op2Add, opfunct, i ;
+	int op1Add, op2Add, opfunct, i;
 	int errorFlag = 0, symbolFlag; /* flags indicate on errors, symbol in line */
 
 	enum guideType guideType; /* used to hold type of guidance for guidance statement */
@@ -32,6 +31,7 @@ int firstScan(FILE *fp) {
 	int IC = 0;
 	int DC = 0;
 
+	dataNode* dataImagePtr = &dataImage;
 	dataImagePtr->length = 0 ;
 	dataImagePtr->data.intPtr = NULL ;
 	dataImagePtr->next = NULL ;
@@ -43,21 +43,14 @@ int firstScan(FILE *fp) {
 	rewind (fp); /* sets the pointer to the begining of the file*/
 
 	printf("strating first scan...\n");
-	i = 0;
-	LOOP: while (fgets(currLine, MAX_LN_LEN + 1, fp)) { /* stages 2-16 */
+	while (fgets(currLine, MAX_LN_LEN + 1, fp)) { /* stages 2-16 */
+
 		symbolFlag = 0; /* reset symbolFlag */
 		++lineNumber;
 
 		/* skip comments and blank spaces*/
-		if (currLine[0] == ';' || currLine[0] == '\n' )
+		if (currLine[0] == ';')
 			continue;
-		while (currLine[i] == ' ' || currLine[i] == '\t' ) {
-			if (currLine[i+1] == ';' || currLine[i+1] == '\n' ) /*according to the book we should avoid using goto, but it is convenient */
-				goto LOOP;
-			if (currLine[i+1] != ' ' && currLine[i+1] != '\t' )
-				break;
-			i++;
-		}
 
 		/* look for symbols - stages 3,4 */
 		if ((labelName = getLabel(currLine)) != NULL) {
@@ -71,19 +64,31 @@ int firstScan(FILE *fp) {
 
 		if ((guideType = getGuideType(currLine)) < 0)
 			errorFlag = ERROR_CODE; /* error code */
+
 		else if (guideType > 0) { /* 0 mean no guide in this line */
 
 			/* stage 9. if guideType is ".entry", it will be defined in 2nd scan */
 			if (guideType == ENTRY) {
-				if (labelName != NULL)
+				if (labelName != NULL) {
 					printf("warning in %d: a label in entry statement is meaningless\n", lineNumber);
+					if (addSymbol(labelName, guideType, IC, DC) < 0) /* label in entry statement is not an error and need to be in symbol table */
+						errorFlag = ERROR_CODE;
+				}
+
+				/* add the label to the entry list; in the second scan will set all the symbols to be entries */
+				labelName = getAnotherLabel(currLine + strlen(".entry ")*sizeof(char));
+				if (addEntryNode(labelName) < 0)
+					errorFlag = ERROR_CODE;
 				continue;
 			}
 
 			/* stage 10: get label og extern statement */
 			if (guideType == EXTERN) {
-				if (labelName != NULL)
+				if (labelName != NULL) {
 					printf("warning in %d: a label in extern statement is meaningless\n", lineNumber);
+					if (addSymbol(labelName, guideType, IC, DC) < 0) /* label in extern statement is not an error and need to be in symbol table */
+						errorFlag = ERROR_CODE;
+				}
 
 				/* parse new label name to add to symbol table */
 				labelName = getAnotherLabel(currLine + strlen(".extern ")*sizeof(char));
@@ -91,7 +96,7 @@ int firstScan(FILE *fp) {
 			}
 
 			/* if there is a symbol add symbol to symbol table */
-			if ((guideType != ENTRY) && (symbolFlag) && (addSymbol(labelName, guideType, IC, DC) < 0))
+			if ((symbolFlag) && (addSymbol(labelName, guideType, IC, DC) < 0))
 				errorFlag = ERROR_CODE;
 
 			/* stages 5-7 */
@@ -124,6 +129,9 @@ int firstScan(FILE *fp) {
 			continue;
 		}
 
+		if (*(argv[0]) == '\0')
+			continue;
+
 		replaceArgs(argv[1], argv[2]); /* if only one argument exist, it should be arg2 and not arg1 */
 		op1Add = getAddMthd(argv[1]);
 		op2Add = getAddMthd(argv[2]);
@@ -145,7 +153,7 @@ int firstScan(FILE *fp) {
 
 
 	DCF = DC; /* stage 18 */
-	ICF = 100+IC;
+	ICF = IC + MMRY_OFFSET;
 
 	updateDataLabels(ICF); /* adds ICF value to all the lablels in the symbol list - stage 19 */
 	return 0; /* success code */

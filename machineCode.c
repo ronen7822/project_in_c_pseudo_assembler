@@ -3,25 +3,6 @@
 
 static int codeArg(char *arg, int AddMethod, int IC);
 
-/* changing the instAddressType to 0,1,2,3  instead of 1,2,4,8 will destroy the gentle logic of the the legalTable you have built - yair */
-int calculAddress(int AddressType){
-
-	switch (AddressType) {
-		case NON:
-			return 0;
-		case IMM:
-			return 0;
-		case DIR:
-			return 1;
-		case REL:
-			return 2;
-		case REG:
-			return 3;	
-	}
-
-	return -1;
-}
-
 /* codeInstruction - codes an instruction into the instrcution image
  * INPUT: instrcution opfunct (contains the opcode and funct of the commands), args and their addressing methods
  * OUTPUT: number of words to add to instrctuion counter
@@ -34,8 +15,8 @@ int buildBinaryCode(int opfunct, char* srcOper, char* destOper, int sourceAdd, i
 	/*coding the first word the instrcution it self */
 	instIamge[IC].conent.head.opCode = (unsigned int) (opfunct / NUM_CMD); /* gets all the necessary data for the coding */
 	instIamge[IC].conent.head.funct = (unsigned int) (opfunct % NUM_CMD);
-	instIamge[IC].conent.head.srcAdress = (unsigned int) calculAddress (sourceAdd );
-	instIamge[IC].conent.head.destAdress = (unsigned int) calculAddress (destAdd );
+	instIamge[IC].conent.head.srcAdress = (unsigned int) (sourceAdd != NON) ? sourceAdd : 0;
+	instIamge[IC].conent.head.destAdress = (unsigned int) (destAdd != NON) ? destAdd : 0;;
 	instIamge[IC].conent.head.srcReg = (unsigned int) (sourceAdd == REG) ? (srcOper[1] - '0') : 0;
 	instIamge[IC].conent.head.destReg = (unsigned int) (destAdd == REG) ? (destOper[1] - '0') : 0;
 	instIamge[IC].conent.head.A = 1; /* in the first word of every instruction A = 1 */
@@ -63,24 +44,13 @@ static int codeArg(char *arg, int AddMethod, int IC) {
 		instIamge[IC].conent.value.R = 0;
 		instIamge[IC].conent.value.E = 0;
 		break;
-
 	case DIR:
-		if ( isSymbolExternal(arg) > 0){	/* if the symbol is external */
-			instIamge[IC].conent.value.data = 0; 
-			instIamge[IC].conent.value.labelName = calloc(strlen(arg)+1, sizeof(char));
-			strcpy(instIamge[IC].conent.value.labelName, arg);
-			instIamge[IC].conent.value.A = 0;
-			instIamge[IC].conent.value.R = 0;
-			instIamge[IC].conent.value.E = 1;
-		}
-		else { /* symbol is not external */
-			instIamge[IC].conent.value.data = 0; 
-			instIamge[IC].conent.value.labelName = calloc(strlen(arg)+1, sizeof(char));
-			strcpy(instIamge[IC].conent.value.labelName, arg);
-			instIamge[IC].conent.value.A = 0;
-			instIamge[IC].conent.value.R = 1;
-			instIamge[IC].conent.value.E = 0;
-		}
+		instIamge[IC].conent.value.data = 0;
+		instIamge[IC].conent.value.labelName = calloc(strlen(arg)+1, sizeof(char));
+		strcpy(instIamge[IC].conent.value.labelName, arg);
+		instIamge[IC].conent.value.A = 0;
+		instIamge[IC].conent.value.R = 1;
+		instIamge[IC].conent.value.E = 0;
 		break;
 	case REL:
 		instIamge[IC].conent.value.data = 0;

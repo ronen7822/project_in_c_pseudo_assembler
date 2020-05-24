@@ -11,36 +11,14 @@ int secondScan(FILE *fp , char * fileName) {
 
 	int symbolValue, errorFlag = 0;
 	int IC, lastCommandIC = 0;
-	char *symbol, *entrySymbol ; 
-	char *currLine = calloc(MAX_LN_LEN + 2, sizeof(char)); /* the current line text */;
+	char *symbol;
 
 	printf("strating second scan...\n");
 
-	/* the part of the eneteris might not work */
-	rewind (fp);
-	lineNumber =0 ;
-	while (fgets(currLine, MAX_LN_LEN + 1, fp)) { /* check for enteris */
-
-		++lineNumber;
-		if ( getGuideType(currLine) == ENTRY) {
-
-			currLine = ( (getGuideType(currLine) == ENTRY ) ? strchr(currLine, 'y') + sizeof(char) : currLine);
-
-			if ( (entrySymbol = getAnotherLabel(currLine)) == NULL) {
-				printf("error in %d: entry command with no label\n", lineNumber );
-				errorFlag = ERROR_CODE;
-				continue;
-			}
-
-			if (  symbolInTable(entrySymbol) == NULL )  {
-				printf("error in %d: label %s was not found", lineNumber, entrySymbol );
-               			errorFlag = ERROR_CODE;
-                		continue ;
-            		}
-           		makeEntry ( entrySymbol ); 
-		}	
-	} 
-
+	/* all entries saved in list during the first scan. now go through the list and mark all the labels as entries */
+	/* similar to step 5 in the algorithm from the notebook */
+	if (entrifyList() < 0)
+		errorFlag = ERROR_CODE;
 
 	/* check if need to add a symbol. if not, skip */
 	for (IC = 0; IC <= ICF; IC++) {
