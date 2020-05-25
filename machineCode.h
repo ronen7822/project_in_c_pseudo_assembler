@@ -54,5 +54,5 @@ void setExternSymbol(int IC);
 
 int getLineNumber(int IC);
 
-
+int lineForPrint(int IC);
 

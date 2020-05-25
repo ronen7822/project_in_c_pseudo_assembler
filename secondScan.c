@@ -5,9 +5,7 @@
 #include "symbolTable.h"
 #include "machineCode.h"
 
-externNode *headExt = NULL;
-
-int secondScan(FILE *fp , char * fileName) {
+int secondScan(void) {
 
 	int symbolValue, errorFlag = 0;
 	int IC, lastCommandIC = 0;
@@ -21,7 +19,7 @@ int secondScan(FILE *fp , char * fileName) {
 		errorFlag = ERROR_CODE;
 
 	/* check if need to add a symbol. if not, skip */
-	for (IC = 0; IC <= ICF; IC++) {
+	for (IC = 0; IC < ICF; IC++) {
 
 		if (getLineType(IC) == HEADER_LINE) {
 			lastCommandIC = IC;
@@ -29,62 +27,28 @@ int secondScan(FILE *fp , char * fileName) {
 		}
 		else {
 			if ((symbol = getSymbol(IC)) != NULL) { /* check if this line contains a symbol */
+				symbolValue = getValueFromSymbol(symbol);
 
-				if ( (symbolValue = getValueFromSymbol(symbol)) > 0) /* get symbol from symbol table if not external . ERROR if no such symbol */
+				/* symbol in symbol table (and not external) */
+				if (symbolValue > 0)
 					setSymbolValue(IC, lastCommandIC ,symbolValue); /* update value */
 
-				else if ( isSymbolExternal(symbol) > 0 ) {
-					setExternSymbol(IC) ; /* need to build list of externals */
-					addExternNode(IC, symbol);
+				/* symbol is external (only external symbol has value 0, otherwise should be MMRY_OFFSET or greater */
+				else if (symbolValue == 0) {
+					setExternSymbol(IC);
+					addExternNode(symbol, IC);
 				}
+
+				/* symbol is not in symbol table */
 				else {
-					printf("error in %d: symbol (%s) not found\n", lineNumber, symbol);
+					printf("error in %d: %s: symbol not found\n", lineNumber, symbol);
 					errorFlag = ERROR_CODE;
 				}
+
 				free(symbol); /* free space allocation for symbol, not needed anymore */
 			}
 		}
 	}
 
-	if (errorFlag == ERROR_CODE)
-		return ERROR_CODE; /* indicates that error was found*/
-
-
-	return buildFiles(fileName , ICF, dataImage ) ;
+	return errorFlag;
 }
-
-int addExternNode(int lineNum, char *symbol) {
-	
-	externNode *newNode = (externNode*) calloc(1, sizeof(externNode));
-
-	/* create new node */
-	newNode->lineVal = lineNum+MMRY_OFFSET;
-	strcpy((newNode->name), symbol);
-
-	newNode->next = headExt;
-	headExt = newNode; 
-
-	return 1;
-}
-
-/* return the next external node*/
-externNode * findExternalLabel(externNode *ptr) {
-	return ptr->next;
-}
-
-int freeExternList(void) {
-
-	externNode *ptr = headExt;
-	externNode *temp = headExt;
-	/* add the offset for all data symbols */
-	while (ptr != NULL) {
-
-		temp = ptr->next;
-		free(ptr);
-		ptr = temp;
-	}
-	
-	return 1;
-}
-
-

@@ -30,7 +30,7 @@ typedef union {
 typedef struct dataNode{
 	struct dataNode *next;
 	int length;
-	int type;/* DATA OR STR*/
+	unsigned int type: 2; /* use the guide enums to distinguish between .string and .data */
 	dataPtr data;
 } dataNode;
 
@@ -38,8 +38,8 @@ extern int lineNumber;
 extern int instImg[MAX_PROGRAM_SIZE];
 extern dataNode dataImage;
 
-extern int DCF; /* data counter final - casues linakge problem fix this later on*/
-extern int ICF;  /* instruction counter final  casues linakge problem fix this later on */
+extern int DCF; /* data counter final */
+extern int ICF;  /* instruction counter final */
 
 enum guideType {NO_GUIDE, DATA, STR, ENTRY, EXTERN, CODE};/*enum for label types*/
 enum instAddressType {NON = -1, IMM = 0, DIR = 1, REL = 2, REG = 3 }; /*enum for operand types*/

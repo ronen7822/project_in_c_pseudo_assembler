@@ -6,13 +6,13 @@
 #include <string.h>
 #include <stdlib.h>
 
+
+
+/* initialization of extern variables */
+dataNode dataImage;
+int lineNumber = 0;
 int ICF;
 int DCF;
-int lineNumber = 0;
-
-/* initialize data image out of function because it is extern variable  */
-dataNode dataImage ;
-
 
 static void replaceArgs(char *arg1, char *arg2);
 
@@ -22,7 +22,7 @@ int firstScan(FILE *fp) {
 	char *labelName = calloc(MAX_LN_LEN + 1, sizeof(char)); /* holds the label, if exist. can hold a full line - for error detection */
 	char* argv[MAX_OP_NUM]; /* holds arguments for command statements */
 
-	int op1Add, op2Add, opfunct, i;
+	int op1Add, op2Add, opfunct, i, numOfWords;
 	int errorFlag = 0, symbolFlag; /* flags indicate on errors, symbol in line */
 
 	enum guideType guideType; /* used to hold type of guidance for guidance statement */
@@ -139,9 +139,12 @@ int firstScan(FILE *fp) {
 		/* check command validity: command exist and operands are in right adreesing method */
 		if ((opfunct = isCmdValid(argv[0], op1Add, op2Add)) < 0)
 			errorFlag = ERROR_CODE; /* error code */
-		else
-			IC += buildBinaryCode(opfunct, argv[1], argv[2], op1Add, op2Add, IC); /* build instruction image and precede IC */
-
+		else {
+			if ((numOfWords = buildBinaryCode(opfunct, argv[1], argv[2], op1Add, op2Add, IC)) != ERROR_CODE)
+				IC += numOfWords; /* build instruction image and precede IC */
+			else
+				errorFlag = ERROR_CODE;
+		}
 	}
 
 
@@ -153,9 +156,9 @@ int firstScan(FILE *fp) {
 
 
 	DCF = DC; /* stage 18 */
-	ICF = IC + MMRY_OFFSET;
+	ICF = IC;
 
-	updateDataLabels(ICF); /* adds ICF value to all the lablels in the symbol list - stage 19 */
+	updateDataLabels(ICF + MMRY_OFFSET); /* adds ICF value to all the lablels in the symbol list - stage 19 */
 	return 0; /* success code */
 }
 

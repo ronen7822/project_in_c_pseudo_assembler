@@ -8,8 +8,8 @@
 
 #define MAX_GUIDE_LEN 6 /* maximum length of guidance ("string" is the longest) */
 #define MIN(a,b) (a < b) ? (a) : (b)
-#define MAX_INT 2097152 /* 2^21 */
-#define MIN_INT -2097152 /* -2^21 */
+#define MAXER_INT 8388608 /* 2^23 */
+#define MINER_INT -8388608 /* -2^23 */
 #define MAX_CHAR 126 /* MAX, MIN are range of visible characters */
 #define MIN_CHAR 32
 #define isVaidChar(c) ((c < MAX_CHAR) && (c > MIN_CHAR))
@@ -65,20 +65,20 @@ int labelValid(char *label) {
 	/* check if the label is in a proper length */
 	if (strlen(label) > MAX_LBL_SZ) {
 		printf("error in %d: label is too long, maximum length is %d", lineNumber, MAX_LBL_SZ);
-		validity = -1;
+		validity = ERROR_CODE;
 	}
 
 	/* check if label starts with a letter */
 	if (!isalpha(*label)) {
 		printf("error in %d:: label should start with a letter", lineNumber);
-		validity = -1;
+		validity = ERROR_CODE;
 	}
 
 	/* check if label contains only numbers and letters */
 	while (*(++label))
 		if (!isalnum(*label)) {
 			printf("error in %d:: label should contain only letters and numbers", lineNumber);
-			validity = -1;
+			validity = ERROR_CODE;
 		}
 
 	return validity;
@@ -111,7 +111,7 @@ int getGuideType(char* linePtr) {
 		return EXTERN;
 
 	printf("error in %d: %s: guide name is not valid\n", lineNumber, guide);
-	return -1; /* error code */
+	return ERROR_CODE; /* error code */
 }
 
 
@@ -140,7 +140,7 @@ int getAddMthd(char* op) {
 
 /* getNumbers - extracts the numbers into array of chars inside dataContent
  * INPUT: a line and dataContent union
- * OUTPUT: integer. -1 in case of an eror, 0 otherwise
+ * OUTPUT: integer. ERROR_CODE in case of an eror, 0 otherwise
  */
 dataNode *getNumbers(char* line) {
 
@@ -173,7 +173,6 @@ dataNode *getNumbers(char* line) {
 				printf("error in %d: comma expected but not found\n", lineNumber);
 				errorFlag = ERROR_CODE;
 			}
-
 		}
 
 		while (isspace(*ptr)) /* skip white spaces */
@@ -181,19 +180,23 @@ dataNode *getNumbers(char* line) {
 
 		tempNum = 0, sign = 1; /* reset these variables to get the next number */
 
-		if (*(ptr) == '-') { /* case of negetive number */
-			sign = -1;
+		if ((*ptr == '-') || (*ptr == '+')) { /* case of negetive number */
+			sign = 44 - *ptr; /* if *ptr is +, sign is 1. if *ptr is -, sign is -1, beacuse + is 43 and - is 45 in ascii */
 			ptr++;
 		}
 
 		while (isdigit(*ptr)) { /* convert string of number to int */
 			tempNum = 10 * tempNum + (*(ptr++) - '0');
 			ic = NEED_COMMA; /* ready for another comma */
-		}
 
-		if ((tempNum > MAX_INT) || (tempNum < MIN_INT)) {
-			printf("error in %d: a number does not fit the memory, should be from %d to %d\n", lineNumber, MIN_INT, MAX_INT);
-			errorFlag = ERROR_CODE;
+			if ((tempNum > MAXER_INT) || (tempNum < MINER_INT)) { /* check every iteration to prevent overflow */
+				printf("error in %d: a number does not fit the memory, should be from %d to %d\n", lineNumber, MINER_INT, MAXER_INT);
+				errorFlag = ERROR_CODE;
+
+				while (!isspace(*ptr) && !(*(ptr) == ',')) /* skip until next space or comma for prevent multiple errors*/
+					ptr++;
+				break;
+			}
 		}
 
 		node->data.intPtr[i++] = (int) tempNum * sign;
@@ -211,6 +214,7 @@ dataNode *getNumbers(char* line) {
 	/* check if there are more arguments than commas */
 	while ((*ptr != '\0') && (*ptr != '\n') && (*ptr != EOF)) {
 		if (!isspace(*(ptr++))) {
+			printf("_%c_", *ptr);
 			printf("error in %d: comma expected but not found\n", lineNumber);
 			errorFlag = ERROR_CODE;
 			break;
@@ -229,7 +233,7 @@ dataNode *getNumbers(char* line) {
 
 /* getStirng - extracts string into array of chars inside dataNode
  * INPUT: a line and dataContent union
- * OUTPUT: integer. -1 in case of an eror, 0 otherwise
+ * OUTPUT: integer. ERROR_CODE in case of an eror, 0 otherwise
  */
 dataNode *getString(char* line) {
 
@@ -292,11 +296,11 @@ dataNode *getString(char* line) {
 	return node;
 }
 
-/* parseCmd - take command and extract the args
- * parseCmd check the command syntax (commas, no more than 4 args, no invalid chars, etc.)
+/* parseCommand - take command and extract the args
+ * parseCommand check the command syntax (commas, no more than 4 args, no invalid chars, etc.)
  * but NOT the command context (correct command to run, number of args correlate to command, types of args etc.)
  * INPUT: a command (cmd) and array to store the arguments
- * OUTPUT: argument count (argc), -1 for invalid syntax. the arguments in argv
+ * OUTPUT: argument count (argc), ERROR_CODE for invalid syntax. the arguments in argv
  */
 int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
 
@@ -320,10 +324,10 @@ int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
 				break;
 		}
 
-		/* CASE: no white space or EOL and argc = 3: extraneous text after end of command */
+		/* CASE: no white space or EOL and argc = MAX: extraneous text after end of command */
 		else if (argc >= MAX_OP_NUM ) {
 			printf("error in %d: extraneous text after end of command\n", lineNumber);
-			return -1; /* there is no need to continue */
+			return ERROR_CODE; /* there is no need to continue */
 		}
 
 		/* CASE: comma. DO: same as white space but check for no double commas */
@@ -331,11 +335,8 @@ int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
 			if (iw == INWORD) { /* case of end of word */
 
 				if ( (argc = addArg(cmd, argv, i, argStart, argc)) < 0 )
-					errorFlag = 1; /* error code. error message printed in addArg */
-				if (argc == MAX_OP_NUM ){
-					printf("error in %d: extraneous text after end of command\n", lineNumber);
-					errorFlag = -1;
-				}
+					errorFlag = ERROR_CODE; /* error code. error message printed in addArg */
+
 				ic = argc > 1 ? NEED_COMMA : FORBID_COMMA;
 				iw = OUTWORD;
 			}
@@ -343,11 +344,11 @@ int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
 			if (ic == FORBID_COMMA){ /* error: case of wrong comma */
 				printf("error in %d: illegal comma before first operand\n", lineNumber);
 				ic = WAS_COMMA;
-				errorFlag = -1;
+				errorFlag = ERROR_CODE;
 			}
 			else if (ic == WAS_COMMA){ /* error: case of double commas */
 				printf("error in %d: multiple consecutive commas\n", lineNumber);
-				errorFlag = -1;
+				errorFlag = ERROR_CODE;
 			}
 			else if (ic == NEED_COMMA)
 				ic = WAS_COMMA;
@@ -358,13 +359,18 @@ int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
 		else {
 			if (ic == NEED_COMMA) {
 				printf("error in %d: missing comma between operands\n", lineNumber);
-				errorFlag = -1; /* error code */
+				errorFlag = ERROR_CODE; /* error code */
 			}
 			if (iw == OUTWORD) {
 				iw = INWORD;
 				argStart = i; /* the first char of the next arg */
 			}
 		}
+	}
+
+	if (ic == WAS_COMMA) {
+		printf("error in %d: extraneous text after end of command\n", lineNumber);
+		errorFlag = ERROR_CODE;
 	}
 
 	return errorFlag;
@@ -377,13 +383,8 @@ int parseCommand(char *argv[MAX_OP_NUM], char *cmd) {
  */
 static int addArg(char* cmd, char *argv[MAX_OP_NUM ], int i, int argStart, int argc) {
 
-	if (i - argStart > MAX_LN_LEN)
-		printf("error in %d: arg %d is too long, maximum length is %d\n",lineNumber, argc, MAX_LN_LEN);
-	else {
-		strncpy(argv[argc], &cmd[argStart], i - argStart);
-		argv[argc++][i - argStart] = '\0';
-	}
-
+	strncpy(argv[argc], &cmd[argStart], i - argStart);
+	argv[argc++][i - argStart] = '\0';
 	return argc;
 }
 
@@ -405,5 +406,3 @@ void printArgv(char *argv[MAX_OP_NUM]) {
 
 	putchar('\n');
 }
-
-
