@@ -6,17 +6,27 @@
 #include <string.h>
 #include <stdlib.h>
 
-
-
 /* initialization of extern variables */
-dataNode dataImage;
+dataNode *dataImage;
 int lineNumber = 0;
 int ICF;
 int DCF;
 
+/* replaceArgs - replace between first and second arg, because in all the commands that has one argument, it's the dest, but parseCommand put the
+ * argument in argv[1] because it is the first argument that encountered
+ * INPUT: two args of a command - arg1, arg2
+ * OUTPUT: if arg2 in none, put arg1 in arg2. no return value (void)
+ */
 static void replaceArgs(char *arg1, char *arg2);
 
-/* the first scan in the dual scan algorithm, no header file for now, could be added in the future */
+/* firstScan - scan the file for the first time, build the file image (labels are not resolved in this scan, done in the second scan)
+ * entry statement saved in entry list, and resolved in second scan
+ * build data image - save the values in linked list (second scan print them in file)
+ * INPUT: a file to scan
+ * OUPUT: status code - 0 in success, ERROR (-1) if an error encountered
+ * METHOD: the algorithm based on the algorithm from the book, but with changes to make it more efficient.
+ * the appropriate stage number is noted before the code
+ */
 int firstScan(FILE *fp) {
 	char *currLine = calloc(MAX_LN_LEN + 2, sizeof(char)); /* the current line text */
 	char *labelName = calloc(MAX_LN_LEN + 1, sizeof(char)); /* holds the label, if exist. can hold a full line - for error detection */
@@ -26,21 +36,26 @@ int firstScan(FILE *fp) {
 	int errorFlag = 0, symbolFlag; /* flags indicate on errors, symbol in line */
 
 	enum guideType guideType; /* used to hold type of guidance for guidance statement */
+	dataNode* dataImagePtr; /* pointer to data image */
 
-	/* reset IC, DC */
+	/* reset lineNumbe, IC, DC */
 	int IC = 0;
 	int DC = 0;
+	lineNumber = 0;
 
-	dataNode* dataImagePtr = &dataImage;
-	dataImagePtr->length = 0 ;
-	dataImagePtr->data.intPtr = NULL ;
-	dataImagePtr->next = NULL ;
+	/* initialization of data image */
+	dataImage = (dataNode*) malloc(sizeof(dataNode));
+	dataImage->length = 0 ;
+	dataImage->data.intPtr = NULL ;
+	dataImage->next = NULL ;
+
+	/* set the pointer to point on data image */
+	dataImagePtr = dataImage;
+
 
 	/* memory allocation for argv */
 	for (i = 0; i < MAX_OP_NUM; i++)
 		argv[i] = (char*) calloc(MAX_LN_LEN + 1, sizeof(char));
-
-	rewind (fp); /* sets the pointer to the begining of the file*/
 
 	printf("strating first scan...\n");
 	while (fgets(currLine, MAX_LN_LEN + 1, fp)) { /* stages 2-16 */
@@ -147,13 +162,13 @@ int firstScan(FILE *fp) {
 		}
 	}
 
-
-	printf("IC = %d, DC = %d\n", IC, DC);
-
 	/* errorFlag is set to 1 if an error detected in the scan, stage 17 */
-	if (errorFlag == ERROR_CODE)
+	if (errorFlag == ERROR_CODE) {
+		printf("first scan failed\n");
 		return ERROR_CODE; /* indicates that error was found*/
-
+	}
+	else
+		printf("first scan finished successfully: IC = %d, DC = %d\n", IC, DC);
 
 	DCF = DC; /* stage 18 */
 	ICF = IC;
@@ -162,6 +177,11 @@ int firstScan(FILE *fp) {
 	return 0; /* success code */
 }
 
+/* replaceArgs - replace between first and second arg, because in all the commands that has one argument, it's the dest, but parseCommand put the
+ * argument in argv[1] because it is the first argument that encountered
+ * INPUT: two args of a command - arg1, arg2
+ * OUTPUT: if arg2 in none, put arg1 in arg2. no return value (void)
+ */
 static void replaceArgs(char *arg1, char *arg2) {
 	if (*arg2 == '\0') { /* arg2 == 0: arg2 is empty */
 		strcpy(arg2, arg1); /* copy arg1 to arg2 */

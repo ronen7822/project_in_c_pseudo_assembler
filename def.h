@@ -1,11 +1,7 @@
 #ifndef DEF_H
-#define DEF_H 0
+#define DEF_H 0 /* prevent multiple includes */
 
 #define MAX_PROGRAM_SIZE 256 /*max program size line count to be assembled*/
-#define ASM_SOURCE_SUFF ".as"	/*assembly source file suffix*/
-#define ASM_OBJECT_SUFF ".ob"	 /*assembly object file suffix*/
-#define ASM_ENTRIES_SUFF ".ent"  /*assembly entries file suffix*/
-#define ASM_EXTERNALS_SUFF ".ext"  /*assembly externals file suffix*/
 #define MAX_FILE_NAME 1000 /*max file path length for source assembly files*/
 #define MAX_LN_LEN 80 /* max line size in assembly source file */
 #define MMRY_OFFSET 100  /*memory address of the assembled program after it was loaded to memory*/
@@ -14,29 +10,22 @@
 #define NUM_CMD 16 /* number of commands */
 #define ERROR_CODE -1
 
-typedef struct instInfo {
-	char *instName; /* insturction name */
-	int opCode; /* insturction opCode */
-	int funct; /* insturction funct, 0 if no funct */
-	int firstOp; /* valid addressing methods for first arg */
-	int secondOp; /* valid addressing methods for first arg */
-} instInfo;
+#define DELETE_SUFFIX(l) fileName[strlen(fileName) - (l)] = '\0' /* delete suffix of file name */
 
-typedef union {
-	int *intPtr;
-	char *strPtr;
-} dataPtr;
-
+/* struct to store data image */
 typedef struct dataNode{
 	struct dataNode *next;
 	int length;
 	unsigned int type: 2; /* use the guide enums to distinguish between .string and .data */
-	dataPtr data;
+	union { /* intPtr for store numbers (.data), strPtr for store strings (.string) */
+		int *intPtr;
+		char *strPtr;
+	} data;
 } dataNode;
 
-extern int lineNumber;
-extern int instImg[MAX_PROGRAM_SIZE];
-extern dataNode dataImage;
+extern dataNode *dataImage;
+
+extern int lineNumber; /* extern for error reporting (all functions print the current line number) */
 
 extern int DCF; /* data counter final */
 extern int ICF;  /* instruction counter final */

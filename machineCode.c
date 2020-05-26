@@ -4,13 +4,60 @@
 #define MAX_INT 2097152 /* 2^21 */
 #define MIN_INT -2097152 /* -2^21 */
 
+/* a data structure that contain the fields of header line in instruction image */
+typedef struct cmdHeader {
+	unsigned int opCode: 6; /* insturction opCode */
+	unsigned int srcAdress: 2 ; /*  addressing method for destation register */
+	unsigned int srcReg: 3 ; /* source register */
+	unsigned int destAdress: 2 ; /* addressing method for source register */
+	unsigned int destReg: 3 ; /* destation register */
+	unsigned int funct: 5 ; /* insturction funct, 0 if no funct */
+	unsigned int A: 1; /* abslute Linkange */
+	unsigned int R: 1; /* Relocatable Linkange */
+	unsigned int E: 1; /* external Linkange */
+	unsigned int lineNumber; /* contain the line of the command */
+} cmdHeader;
+
+/* a data structure that contain the fields of data line in instruction image */
+typedef struct data {
+	int data: 21;
+	unsigned int A: 1;
+	unsigned int R: 1;
+	unsigned int E: 1;
+	char *labelName;
+} data;
+
+/* a data structure that contains one line in the instruction image */
+typedef struct line {
+	union { /* content of one line in instruction image */
+		cmdHeader head;
+		data value;
+	} conent;
+	unsigned int type : 1; /* type of the line - header or data */
+} line;
+
+/* the instruction image */
+line instIamge[MAX_PROGRAM_SIZE]; /* MAX_PROGRAM_SIZE is set to be MAX_PROGRAM_SIZE */
+
+/* codeArg - code an argument in the instruction image
+ * INPUT: an arg (as a string), its address method and IC (index to locate this)
+ * OUTPUT: number of words that located (0 or 1). ERROR (-1) in case of error
+ */
 static int codeArg(char *arg, int AddMethod, int IC);
+
+/* codeNumber - code number (in immediate addressing) into the instruction image
+ * INPUT: an integer pointer, where the number located, and arg (as a sting) to parse
+ * OUTPUT: the number is assigned to the pointer. return value is 0 for success and ERROR (-1) for error
+ * NOTE: this function make paring - so it should be in parse.c instead of it. but these files are independent intentionally.
+ * so a desicion taken to parse the number in for immediate addressing in this file
+ */
 static int codeNumber(int *num, char *arg);
 
-/* codeInstruction - codes an instruction into the instrcution image
+/* buildBinaryCode - codes an instruction into the instrcution image
  * INPUT: instrcution opfunct (contains the opcode and funct of the commands), args and their addressing methods
- * OUTPUT: number of words to add to instrctuion counter
- * METHOD:  complete this later on
+ * OUTPUT: number of words to add to instrctuion counter (e.g. return value of 2, means that a command hear and one arg was added
+ * return ERROR (-1) of error encountered
+ * METHOD: just assign the input to the struct and cal codeArg for assigning the args
  */
 int buildBinaryCode(int opfunct, char* srcOper, char* destOper, int sourceAdd, int destAdd, int IC) {
 
@@ -44,6 +91,10 @@ int buildBinaryCode(int opfunct, char* srcOper, char* destOper, int sourceAdd, i
 	return ((errorFlag != ERROR_CODE) ? numOfWords : ERROR_CODE); /* number of words added to code image, or an error */
 }
 
+/* codeArg - code an argument in the instruction image
+ * INPUT: an arg (as a string), its address method and IC (index to locate this)
+ * OUTPUT: number of words that located (0 or 1). ERROR (-1) in case of error
+ */
 static int codeArg(char *arg, int AddMethod, int IC) {
 
 	int tempNum; /* used for temporary store the parsed number */
@@ -63,7 +114,7 @@ static int codeArg(char *arg, int AddMethod, int IC) {
 		break;
 	case DIR:
 		instIamge[IC].conent.value.data = 0;
-		instIamge[IC].conent.value.labelName = calloc(strlen(arg)+1, sizeof(char));
+		instIamge[IC].conent.value.labelName = calloc(strlen(arg) + 1, sizeof(char));
 		strcpy(instIamge[IC].conent.value.labelName, arg);
 		instIamge[IC].conent.value.A = 0;
 		instIamge[IC].conent.value.R = 1;
@@ -71,7 +122,7 @@ static int codeArg(char *arg, int AddMethod, int IC) {
 		break;
 	case REL:
 		instIamge[IC].conent.value.data = 0;
-		instIamge[IC].conent.value.labelName = calloc(strlen(arg)+1, sizeof(char));
+		instIamge[IC].conent.value.labelName = calloc(strlen(arg) + 1, sizeof(char));
 		strcpy(instIamge[IC].conent.value.labelName, ++arg); /* skip the '&' in relative addressing */
 		instIamge[IC].conent.value.A = 1;
 		instIamge[IC].conent.value.R = 0;
@@ -83,6 +134,12 @@ static int codeArg(char *arg, int AddMethod, int IC) {
 	return 1; /* i.e. a word of data was added */
 }
 
+/* codeNumber - code number (in immediate addressing) into the instruction image
+ * INPUT: an integer pointer, where the number located, and arg (as a sting) to parse
+ * OUTPUT: the number is assigned to the pointer. return value is 0 for success and ERROR (-1) for error
+ * NOTE: this function make paring - so it should be in parse.c instead of it. but these files are independent intentionally.
+ * so a desicion taken to parse the number in for immediate addressing in this file
+ */
 static int codeNumber(int *num, char *arg) {
 
 	int tempNum = 0, errorFlag, sign = 1;
@@ -117,18 +174,36 @@ static int codeNumber(int *num, char *arg) {
 	return 0;
 }
 
+/* getLineType - return if a line is a header or data (code an argument)
+ * INPUT: an index in instruction image
+ * OUTPUT: the type of the line in this index
+ */
 int getLineType(int IC) {
 	return instIamge[IC].type;
 }
 
+/* getSymbol - for data lines, if the data is a symbol to resolve, the symbol is saved in the line index during the first scan.
+ * this function return the symbol for a line (if symbol is NULL, there is no symbol and second scan skip this line)
+ * INPUT: an index in instruction image
+ * OUTPUT: symbol in this line
+ */
 char *getSymbol(int IC) {
 	return instIamge[IC].conent.value.labelName;
 }
 
+/* getLineNumber - for header lines, this function return the number of the line in the original file (".as" file) for error prints
+ * INPUT: an index in instruction image
+ * OUTPUT: the line number in the original file that corresponds to this index in instruction image
+ */
 int getLineNumber(int IC) {
 	return instIamge[IC].conent.head.lineNumber;
 }
 
+/* setSymbolValue - assign the value of symbol (during second scan)
+ * INPUT: an index in instruction image (IC), index of the command in instruction image, value of a symbol
+ * OUTPUT: void, but assign the value of a the symbol in the instruction image
+ * METHOD: for DIR method, assign the value of the symbol, for REL method, assign the difference between header IC (lastCommandIC) and symbol value
+ */
 void setSymbolValue(int IC, int lastCommandIC, int symbolValue) {
 	if (instIamge[IC].conent.value.A)  /* i.e. the addressing method is REL */
 		instIamge[IC].conent.value.data = (symbolValue - lastCommandIC - MMRY_OFFSET);
@@ -138,13 +213,20 @@ void setSymbolValue(int IC, int lastCommandIC, int symbolValue) {
 
 }
 
-/* set symbol to be external */
+/* setExternSymbol - for symbol that detected to be external, set the refrence bits to represent that this symbol is external
+ * INPUT: an index in instruction image to set to be external
+ * OUTPUT: void, but reference bits in the line marked as external
+ */
 void setExternSymbol(int IC) {
 	instIamge[IC].conent.value.E = 1;
 	instIamge[IC].conent.value.R = 0;
 	instIamge[IC].conent.value.A = 0;
 }
 
+/* lineForPrint - calculate the value of a line, to print it in hex in the output file
+ * INPUT: an index in instruction image
+ * OUPUT: a numeric value of this line
+ */
 int lineForPrint(int IC) {
 		int ret = 0; /* this number is the return value */
 

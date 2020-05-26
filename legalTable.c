@@ -11,6 +11,7 @@
 #define NUM_ADD_MTH 4 /* number of addressing methods */
 #define A_Z 26
 
+/* a struct that contains all the relevant data to check if a command is valid or not */
 typedef struct cmd {
 	int hashName; /* hash value of the name of command */
 	int opCode; /* opCode of command, defined in p. 34 */
@@ -20,6 +21,13 @@ typedef struct cmd {
 } cmd;
 
 static cmd legalTable[NUM_CMD];
+
+/* hashCmdName - calculate hash value of command name, hash function is sum of cmd[i]*26^i
+ * INPUT: a string (should be a command name)
+ * OUTPUT: command hash value. ERROR_CODE if the input is invalid (too long or contains invalid chars)
+ * *there is no reason to declare this function because it's static and first in file, but for keep the order...
+ */
+static int hashCmdName(char *cmd);
 
 /* hashCmdName - calculate hash value of command name, hash function is sum of cmd[i]*26^i
  * INPUT: a string (should be a command name)
@@ -43,7 +51,7 @@ static int hashCmdName(char *cmd) {
 
 /* initLegalTable - init the legal table (all data stored in file)
  * INPUT: no input. read data from file in known name
- * OUTPUT: init the legal table
+ * OUTPUT: init the legal table (an internal data structure that keep all the relevant data)
  */
 int initLegalTable() {
 	int i, j; /* indexes */
@@ -82,7 +90,7 @@ int initLegalTable() {
 
 /* isCmdValid - check if command is valid and operands are valid
  * INPUT: a command (not assumed to be valid) and address method of op1, op2
- * OUTPUT: opCode if valid, ERROR_CODE if invalid
+ * OUTPUT: opCode and funct if valid (simple math manipulate allow other function to calcualte them from this value, ERROR_CODE (-1) if invalid
  */
 int isCmdValid(char *cmd, int addOP1, int addOP2) {
 	int i = 0, errorFlag = 0;

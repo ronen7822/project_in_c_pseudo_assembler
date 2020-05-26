@@ -14,7 +14,16 @@
 #define MIN_CHAR 32
 #define isVaidChar(c) ((c < MAX_CHAR) && (c > MIN_CHAR))
 
+/* addArg - subfunction of parseCommand. Called to add argument into argv
+ * INPUT: a command, indexes of the arg (argStart -> i), argv, argc
+ * OUTPUT: argc value
+ */
 static int addArg(char* cmd, char *argv[MAX_OP_NUM], int i, int argStart, int argc);
+
+/* flushArgv - flush argv for another use
+ * INPUT: argv
+ * OUTPUT: clean argv (all elements becomes empty strings)
+ */
 static void flushArgv(char *argv[MAX_OP_NUM]);
 int lineNumber;
 
@@ -38,6 +47,10 @@ char *getLabel(char *line) {
 	return label;
 }
 
+/* getLabel - extract a label after entry or extern guide, from a line
+ * INPUT: a line (after ".entry" or ".extern" guide was encountered)
+ * OUTPUT: a string (char*) of the label, or NULL if there is no labal in the line
+ */
 char *getAnotherLabel(char *line) {
 	char *label = calloc(MAX_LN_LEN + 1, sizeof(char));
 	char *startLabel = line, *endLabel;
@@ -84,6 +97,10 @@ int labelValid(char *label) {
 	return validity;
 }
 
+/* getGuideType - check if the line contain guide statement, if it is, return its type
+ * INPUT: a line to parse
+ * OUTPUT: type of guide (NO_GUIDE if not a guidance statement)
+ */
 int getGuideType(char* linePtr) {
 	char *guide = calloc(MAX_GUIDE_LEN +1 , sizeof(char));
 	int length = 0; /* length of guide, if exist */
@@ -115,7 +132,7 @@ int getGuideType(char* linePtr) {
 }
 
 
-/* getAddMthd - amnalize the operand to get its addressing method
+/* getAddMthd - analize the operand to get its addressing method
  * INPUT: an operand (as string)
  * OUTPUT: indication of its addressing method (NON = no operand)
  */
@@ -138,9 +155,9 @@ int getAddMthd(char* op) {
 }
 
 
-/* getNumbers - extracts the numbers into array of chars inside dataContent
- * INPUT: a line and dataContent union
- * OUTPUT: integer. ERROR_CODE in case of an eror, 0 otherwise
+/* getNumbers - extracts numbers into array of integers inside a dataNode
+ * INPUT: a part of line (after ".data" guide encountered) to parse
+ * OUTPUT: a node with data for success, NULL in case of error
  */
 dataNode *getNumbers(char* line) {
 
@@ -153,10 +170,11 @@ dataNode *getNumbers(char* line) {
 	node->next = NULL;
 	node->type = DATA;
 
+	/* count how many numbers should be in line */
 	for (ptr = line; *ptr != '\0'; ptr++)
 		node->length += (*ptr == ',');
 
-
+	/* memory allocation for store the numbers */
 	node->data.intPtr = calloc(node->length, sizeof(int));
 	ptr = line;
 
@@ -164,7 +182,14 @@ dataNode *getNumbers(char* line) {
 
 		while (isspace(*ptr)) /* skip white spaces */
 			ptr++;
-		if (ic == NEED_COMMA) {
+
+		/* right use in commas */
+		if ((ic == WAS_COMMA) && (*ptr == ',')) { /* if comma already was - a comma is an error */
+			printf("error in %d: multiple commas\n", lineNumber);
+			errorFlag = ERROR_CODE;
+			break;
+		}
+		else if (ic == NEED_COMMA) { /* if comma is needed - not a comma is an error */
 			if (*ptr == ',') {
 				ic = WAS_COMMA;
 				ptr++;
@@ -202,7 +227,7 @@ dataNode *getNumbers(char* line) {
 		node->data.intPtr[i++] = (int) tempNum * sign;
 
 		/* case of non-digit character in the "number" */
-		if (!isdigit(*ptr) && !isspace(*ptr) && !(*ptr == ',')) {
+		if (!isdigit(*ptr) && !isspace(*ptr) && !(*ptr == ',') && !(*ptr == '\0')) {
 			printf("error in %d: invalid character (%c) in number - not a digit\n", lineNumber, *ptr);
 			errorFlag = ERROR_CODE;
 			ic = NEED_COMMA; /* ready for another comma */
@@ -212,16 +237,16 @@ dataNode *getNumbers(char* line) {
 	}
 
 	/* check if there are more arguments than commas */
-	while ((*ptr != '\0') && (*ptr != '\n') && (*ptr != EOF)) {
-		if (!isspace(*(ptr++))) {
-			printf("_%c_", *ptr);
-			printf("error in %d: comma expected but not found\n", lineNumber);
-			errorFlag = ERROR_CODE;
-			break;
+	if (errorFlag != ERROR_CODE) {
+		while ((*ptr != '\0') && (*ptr != '\n') && (*ptr != EOF)) {
+			if (!isspace(*(ptr++))) {
+				printf("error in %d: comma expected but not found\n", lineNumber);
+				errorFlag = ERROR_CODE;
+				break;
+			}
 		}
 	}
-
-	if (errorFlag == ERROR_CODE) {/* free memory allocation */
+	else {/* free memory allocation */
 		free(node->data.intPtr);
 		free(node);
 		return NULL;
@@ -231,9 +256,9 @@ dataNode *getNumbers(char* line) {
 	return node;
 }
 
-/* getStirng - extracts string into array of chars inside dataNode
- * INPUT: a line and dataContent union
- * OUTPUT: integer. ERROR_CODE in case of an eror, 0 otherwise
+/* getStirng - extracts string into array of chars inside a dataNode
+ * INPUT: a part of line (after ".string" guide encountered) to parse
+ * OUTPUT: a node with data for success, NULL in case of error
  */
 dataNode *getString(char* line) {
 
@@ -297,7 +322,7 @@ dataNode *getString(char* line) {
 }
 
 /* parseCommand - take command and extract the args
- * parseCommand check the command syntax (commas, no more than 4 args, no invalid chars, etc.)
+ * parseCommand check the command syntax (commas, no more than 3 args, right use in commas, etc.)
  * but NOT the command context (correct command to run, number of args correlate to command, types of args etc.)
  * INPUT: a command (cmd) and array to store the arguments
  * OUTPUT: argument count (argc), ERROR_CODE for invalid syntax. the arguments in argv
@@ -390,7 +415,7 @@ static int addArg(char* cmd, char *argv[MAX_OP_NUM ], int i, int argStart, int a
 
 /* flushArgv - flush argv for another use
  * INPUT: argv
- * OUTPUT: clean argv (all elements are empty strings)
+ * OUTPUT: clean argv (all elements becomes empty strings)
  */
 static void flushArgv(char *argv[MAX_OP_NUM]) {
 
@@ -399,6 +424,10 @@ static void flushArgv(char *argv[MAX_OP_NUM]) {
 		*argv[i] = '\0';
 }
 
+/* printArgv - aid function (not in use). print argv - usefull for debugging
+ * INPUT: argv
+ * OUTPUT: print argv
+ */
 void printArgv(char *argv[MAX_OP_NUM]) {
 	int i = 0;
 	while (i < MAX_OP_NUM)
